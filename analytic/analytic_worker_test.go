@@ -1,16 +1,15 @@
 package analytic
 
 import (
-	"fmt"
 	"testing"
 )
 
-func TestCreateWorker(t *testing.T) {
-	brokers := []string{"192.168.1.1"}
-	topics := []string{"test1", "test2"}
-	testWorker, err := NewAnalyticWorker(brokers, "groupTest", topics)
-
-	if testWorker.Consumer.groupID != "groupTest" {
-		fmt.Println("Nope")
+func TestIfErrorWhenCreatingNewWorker(t *testing.T) {
+	brokers := []string{"localhost:9092"}
+	topics := []string{"test_logs"}
+	testWorker, err := NewAnalyticWorker(brokers, "groupAnalytic", topics)
+	if err != nil {
+		t.Errorf("Something went wrong when creating the worker")
 	}
+	testWorker.loopError()
 }

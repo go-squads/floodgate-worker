@@ -1,8 +1,20 @@
 package analytic
 
 import (
+	"log"
+
+	"github.com/Shopify/sarama"
 	cluster "github.com/bsm/sarama-cluster"
 )
+
+type AnalyticWorker interface {
+	Start()
+	Stop()
+	IsStart() bool
+	OnError(f func(error))
+	OnSuccess(f func(*sarama.ConsumerMessage))
+	OnNotification(f func(*cluster.Notification))
+}
 
 type analyticWorker struct {
 	Consumer cluster.Consumer
@@ -22,4 +34,14 @@ func NewAnalyticWorker(brokers []string, clusterID string,
 	return analyticWorker{
 		Consumer: *clusterConsumer,
 	}, nil
+}
+
+func (worker *analyticWorker) loopError() {
+	for err := range worker.Consumer.Errors() {
+		log.Printf("Error: %s\n", err.Error())
+	}
+}
+
+func (worker *analyticWorker) checkAndSubscribeTopics(topics []string) {
+
 }
