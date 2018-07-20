@@ -1,0 +1,75 @@
+package analytic
+
+import (
+	"fmt"
+	"os"
+	"sync"
+
+	"github.com/Shopify/sarama"
+)
+
+type AnalyticWorker interface {
+	OnSuccess(f func(*sarama.ConsumerMessage))
+}
+
+type analyticWorker struct {
+	consumer      ClusterAnalyser
+	signalToStop  chan int
+	wg            sync.WaitGroup
+	onSuccessFunc func(*sarama.ConsumerMessage)
+}
+
+func NewAnalyticWorker(consumer ClusterAnalyser) *analyticWorker {
+	return &analyticWorker{
+		consumer:     consumer,
+		signalToStop: make(chan int, 1),
+	}
+}
+
+func (w *analyticWorker) OnSuccess(f func(*sarama.ConsumerMessage)) {
+	w.onSuccessFunc = f
+}
+
+func (w *analyticWorker) successReadMessage(message *sarama.ConsumerMessage) {
+	fmt.Fprintf(os.Stdout, "\nTopic: %s, Partition: %d, Offset: %d, Key: %s, MessageVal: %s,\n",
+		message.Topic, message.Partition, message.Offset, message.Key, message.Value)
+	if w.onSuccessFunc != nil {
+		w.onSuccessFunc(message)
+	}
+}
+
+func (w *analyticWorker) Start() {
+	go w.consumeMessage()
+}
+
+func (w *analyticWorker) Stop() {
+	if w.consumer != nil {
+		w.consumer.Close()
+	}
+
+	go func() {
+		w.signalToStop <- 1
+	}()
+}
+
+func (w *analyticWorker) consumeMessage() {
+	for {
+		fmt.Println("Looking for logs:..")
+		select {
+		case message, ok := <-w.consumer.Messages():
+			if ok {
+				w.successReadMessage(message)
+				w.consumer.MarkOffset(message, "")
+			}
+		case <-w.signalToStop:
+			return
+		}
+	}
+}
+
+// TODO: LIST
+// Refresh Topics Constantly - Lock the routine, parse through the topics, unlock
+// Analyse the Topics
+// Connect to DB
+// Write to DB
+// Need to make sarama.Client to create new topics
