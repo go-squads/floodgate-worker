@@ -3,7 +3,6 @@ package analytic
 import (
 	"fmt"
 	"os"
-	"sync"
 
 	"github.com/Shopify/sarama"
 )
@@ -15,14 +14,13 @@ type AnalyticWorker interface {
 type analyticWorker struct {
 	consumer      ClusterAnalyser
 	signalToStop  chan int
-	wg            sync.WaitGroup
 	onSuccessFunc func(*sarama.ConsumerMessage)
 }
 
 func NewAnalyticWorker(consumer ClusterAnalyser) *analyticWorker {
 	return &analyticWorker{
 		consumer:     consumer,
-		signalToStop: make(chan int, 1),
+		signalToStop: make(chan int),
 	}
 }
 
@@ -43,6 +41,7 @@ func (w *analyticWorker) Start() {
 }
 
 func (w *analyticWorker) Stop() {
+	fmt.Println("Stop Called")
 	if w.consumer != nil {
 		w.consumer.Close()
 	}
