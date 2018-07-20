@@ -16,34 +16,31 @@ type analyticServices struct {
 	Client        sarama.Client
 }
 
-func (a *analyticServices) SetUpConfig() *cluster.Config {
+func setUpConfig() cluster.Config {
 	config := sarama.NewConfig()
 	config.Version = sarama.V0_10_2_0
 
 	clusterConfig := cluster.NewConfig()
 	clusterConfig.Config = *config
-	return clusterConfig
+	return *clusterConfig
 }
 
-func (a *analyticServices) SetUpClient(brokers []string, config *sarama.Config) (sarama.Client, error) {
+func setUpClient(brokers []string, config *sarama.Config) (sarama.Client, error) {
 	client, err := sarama.NewClient(brokers, config)
 	return client, err
 }
 
-// Call NewConsumer
-func (a *analyticServices) SpawnAnalyticWorker(brokers []string) {
+func NewAnalyticServices(brokers []string) analyticServices {
 	brokerConfig := sarama.NewConfig()
-	analyserClusterConfig := a.SetUpConfig()
-	brokerClient, err := a.SetUpClient(brokers, brokerConfig)
+	analyserClusterConfig := setUpConfig()
+	brokerClient, err := setUpClient(brokers, brokerConfig)
 	if err != nil {
 		log.Printf("Failed to connect to broker...")
 	}
-	topicList, err := brokerClient.Topics()
-	workerCluster, err := cluster.NewConsumer(brokers, GroupID, topicList, analyserClusterConfig)
-	if err != nil {
-		log.Printf("Failed to init consumer")
+	return analyticServices{
+		clusterConfig: analyserClusterConfig,
+		Client:        brokerClient,
 	}
-	// use worker made to call NewAnalyticWorker
-	worker := NewAnalyticWorker(workerCluster)
-	worker.Start()
 }
+
+// Call NewConsumer
