@@ -16,6 +16,8 @@ The worker will request the messages from Kafka. The worker will sort the
 messages based on the message's topics, it will create another goroutine
 if it detects that the message contains a new topic  
 
+cluster_analyser is an interface for *sarama.consumer to allow us to mock it for testing.
+
 ## Installation Instructions
 
 
