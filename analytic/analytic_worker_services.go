@@ -50,7 +50,7 @@ func NewAnalyticServices(brokers []string) analyticServices {
 func (a *analyticServices) spawnNewAnalyser(topic string) error {
 	analyserCluster, err := cluster.NewConsumer(a.brokers, GroupID, []string{topic}, &a.clusterConfig)
 	if err != nil {
-		log.Printf("Failed to create a cluster of analyser")
+		log.Fatalf("Failed to create a cluster of analyser")
 	}
 	worker := NewAnalyticWorker(analyserCluster)
 	a.workerList[topic] = *worker
@@ -64,4 +64,14 @@ func (a *analyticServices) checkIfTopicAlreadySubscribed(topic string) bool {
 		return false
 	}
 	return true
+}
+
+func (a *analyticServices) spawnNewTopicAnalyser(topic string) {
+	err := a.spawnNewAnalyser(topic)
+	if err != nil {
+		log.Printf("Failed to create new worker for new topic")
+	}
+	newWorker := a.workerList[topic]
+	newWorker.Start()
+	return
 }
