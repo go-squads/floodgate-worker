@@ -46,6 +46,7 @@ func (w *analyticWorker) Stop() {
 	}
 
 	go func() {
+		fmt.Println("sent stop signal")
 		w.signalToStop <- 1
 	}()
 }

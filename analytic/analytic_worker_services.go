@@ -15,6 +15,7 @@ type analyticServices struct {
 	clusterConfig cluster.Config
 	client        sarama.Client
 	brokers       []string
+	workerList    map[string]analyticWorker
 }
 
 func setUpConfig() cluster.Config {
@@ -42,14 +43,25 @@ func NewAnalyticServices(brokers []string) analyticServices {
 		clusterConfig: analyserClusterConfig,
 		client:        brokerClient,
 		brokers:       brokers,
+		workerList:    make(map[string]analyticWorker),
 	}
 }
 
-func (a *analyticServices) spawnNewAnalyser(topic string) (*analyticWorker, error) {
+func (a *analyticServices) spawnNewAnalyser(topic string) error {
 	analyserCluster, err := cluster.NewConsumer(a.brokers, GroupID, []string{topic}, &a.clusterConfig)
 	if err != nil {
 		log.Printf("Failed to create a cluster of analyser")
 	}
 	worker := NewAnalyticWorker(analyserCluster)
-	return worker, err
+	a.workerList[topic] = *worker
+	return err
+}
+
+// make an array of workers - then iterate through it to start it?
+func (a *analyticServices) checkIfTopicAlreadySubscribed(topic string) bool {
+	_, exist := a.workerList[topic]
+	if !exist {
+		return false
+	}
+	return true
 }
