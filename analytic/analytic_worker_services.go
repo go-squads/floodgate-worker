@@ -2,6 +2,7 @@ package analytic
 
 import (
 	"log"
+	"strings"
 
 	"github.com/Shopify/sarama"
 	cluster "github.com/bsm/sarama-cluster"
@@ -75,3 +76,17 @@ func (a *analyticServices) spawnNewAnalyserForNewTopic(topic string) {
 	newWorker.Start()
 	return
 }
+
+func (a *analyticServices) Start() {
+	topicList, _ := a.client.Topics()
+	for _, topic := range topicList {
+		if strings.HasSuffix(topic, "_logs") {
+			a.spawnNewAnalyser(topic)
+			analyser := a.workerList[topic]
+			analyser.Start()
+		}
+	}
+	return
+}
+
+// Figure out when to call these two functions
