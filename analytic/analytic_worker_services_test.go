@@ -9,3 +9,12 @@ func TestIfNewTopicIsDetected(t *testing.T) {
 		t.Error("Failed to detect new topic")
 	}
 }
+
+func TestIfNewWorkerIsProperlyMapped(t *testing.T) {
+	testService := NewAnalyticServices([]string{"localhost:9092"})
+	testService.spawnNewAnalyser("test")
+	_, exist := testService.workerList["test"]
+	if !exist {
+		t.Error("Worker not properly mapped")
+	}
+}

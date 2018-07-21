@@ -66,7 +66,7 @@ func (a *analyticServices) checkIfTopicAlreadySubscribed(topic string) bool {
 	return true
 }
 
-func (a *analyticServices) spawnNewTopicAnalyser(topic string) {
+func (a *analyticServices) spawnNewAnalyserForNewTopic(topic string) {
 	err := a.spawnNewAnalyser(topic)
 	if err != nil {
 		log.Printf("Failed to create new worker for new topic")
