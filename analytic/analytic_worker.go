@@ -41,7 +41,6 @@ func (w *analyticWorker) Start() {
 }
 
 func (w *analyticWorker) Stop() {
-	fmt.Println("Stop Called")
 	if w.consumer != nil {
 		w.consumer.Close()
 	}
@@ -65,10 +64,3 @@ func (w *analyticWorker) consumeMessage() {
 		}
 	}
 }
-
-// TODO: LIST
-// Refresh Topics Constantly - Lock the routine, parse through the topics, unlock
-// Analyse the Topics
-// Connect to DB
-// Write to DB
-// Need to make sarama.Client to create new topics

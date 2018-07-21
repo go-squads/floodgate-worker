@@ -13,7 +13,8 @@ const (
 
 type analyticServices struct {
 	clusterConfig cluster.Config
-	Client        sarama.Client
+	client        sarama.Client
+	brokers       []string
 }
 
 func setUpConfig() cluster.Config {
@@ -39,8 +40,16 @@ func NewAnalyticServices(brokers []string) analyticServices {
 	}
 	return analyticServices{
 		clusterConfig: analyserClusterConfig,
-		Client:        brokerClient,
+		client:        brokerClient,
+		brokers:       brokers,
 	}
 }
 
-// Call NewConsumer
+func (a *analyticServices) spawnNewAnalyser(topic string) (*analyticWorker, error) {
+	analyserCluster, err := cluster.NewConsumer(a.brokers, GroupID, []string{topic}, &a.clusterConfig)
+	if err != nil {
+		log.Printf("Failed to create a cluster of analyser")
+	}
+	worker := NewAnalyticWorker(analyserCluster)
+	return worker, err
+}
