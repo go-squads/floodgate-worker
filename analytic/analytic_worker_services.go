@@ -1,11 +1,13 @@
 package analytic
 
 import (
+	"fmt"
 	"log"
 	"strings"
 
 	"github.com/Shopify/sarama"
 	cluster "github.com/bsm/sarama-cluster"
+	client "github.com/influxdata/influxdb/client/v2"
 )
 
 const (
@@ -17,6 +19,7 @@ type analyticServices struct {
 	client        sarama.Client
 	brokers       []string
 	workerList    map[string]analyticWorker
+	database      client.Client
 }
 
 func setUpConfig() cluster.Config {
@@ -33,6 +36,20 @@ func setUpClient(brokers []string, config *sarama.Config) (sarama.Client, error)
 	return client, err
 }
 
+func connectToInfluxDB() client.Client {
+	clientToDB, err := client.NewHTTPClient(client.HTTPConfig{
+		Addr:     "http://localhost:8086",
+		Username: "vin0298",
+		Password: "1450Id",
+	})
+
+	if err != nil {
+		fmt.Println("Failed connection ", err)
+	}
+
+	return clientToDB
+}
+
 func NewAnalyticServices(brokers []string) analyticServices {
 	brokerConfig := sarama.NewConfig()
 	analyserClusterConfig := setUpConfig()
@@ -45,6 +62,7 @@ func NewAnalyticServices(brokers []string) analyticServices {
 		client:        brokerClient,
 		brokers:       brokers,
 		workerList:    make(map[string]analyticWorker),
+		database:      connectToInfluxDB(),
 	}
 }
 
@@ -105,3 +123,6 @@ func (a *analyticServices) Close() {
 	a.client.Close()
 	return
 }
+
+// Parse the Message
+// Increment the count

@@ -63,4 +63,5 @@ func spawnNewWorker(brokers []string, clusterConfig *cluster.Config, topic strin
 	}
 	worker := analytic.NewAnalyticWorker(consumer)
 	worker.Start()
+	defer worker.Stop()
 }
