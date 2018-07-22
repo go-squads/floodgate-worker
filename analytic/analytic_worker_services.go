@@ -89,4 +89,13 @@ func (a *analyticServices) Start() {
 	return
 }
 
+func (a *analyticServices) Close() {
+	topicList, _ := a.client.Topics()
+	for _, topic := range topicList {
+		worker := a.workerList[topic]
+		worker.Stop()
+	}
+	return
+}
+
 // Figure out when to call these two functions
