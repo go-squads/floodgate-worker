@@ -81,9 +81,9 @@ func (a *analyticServices) Start() {
 	topicList, _ := a.client.Topics()
 	for _, topic := range topicList {
 		if strings.HasSuffix(topic, "_logs") {
-			a.spawnNewAnalyser(topic)
-			analyser := a.workerList[topic]
-			analyser.Start()
+			if !a.checkIfTopicAlreadySubscribed(topic) {
+				a.spawnNewAnalyserForNewTopic(topic)
+			}
 		}
 	}
 	return
