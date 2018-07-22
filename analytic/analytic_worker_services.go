@@ -58,6 +58,9 @@ func (a *analyticServices) spawnNewAnalyser(topic string) error {
 	return err
 }
 
+// Start
+// make a new client
+// check for new topics
 // make an array of workers - then iterate through it to start it?
 func (a *analyticServices) checkIfTopicAlreadySubscribed(topic string) bool {
 	_, exist := a.workerList[topic]
@@ -77,6 +80,8 @@ func (a *analyticServices) spawnNewAnalyserForNewTopic(topic string) {
 	return
 }
 
+// Check for new topic when new message with new topic appears
+// sarama.CreateTopicsRequest
 func (a *analyticServices) Start() {
 	topicList, _ := a.client.Topics()
 	for _, topic := range topicList {
@@ -92,10 +97,11 @@ func (a *analyticServices) Start() {
 func (a *analyticServices) Close() {
 	topicList, _ := a.client.Topics()
 	for _, topic := range topicList {
-		worker := a.workerList[topic]
-		worker.Stop()
+		worker, exist := a.workerList[topic]
+		if exist {
+			worker.Stop()
+		}
 	}
+	a.client.Close()
 	return
 }
-
-// Figure out when to call these two functions
