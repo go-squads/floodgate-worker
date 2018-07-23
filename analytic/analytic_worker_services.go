@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/BaritoLog/go-boilerplate/timekit"
 	"github.com/Shopify/sarama"
 	cluster "github.com/bsm/sarama-cluster"
 	client "github.com/influxdata/influxdb/client/v2"
@@ -40,20 +41,6 @@ func setUpClient(brokers []string, config *sarama.Config) (sarama.Client, error)
 	return client, err
 }
 
-func connectToInfluxDB() client.Client {
-	clientToDB, err := client.NewHTTPClient(client.HTTPConfig{
-		Addr:     "http://localhost:8086",
-		Username: "vin0298",
-		Password: "1450Id",
-	})
-
-	if err != nil {
-		fmt.Println("Failed connection ", err)
-	}
-
-	return clientToDB
-}
-
 func NewAnalyticServices(brokers []string) analyticServices {
 	brokerConfig := sarama.NewConfig()
 	analyserClusterConfig := setUpConfig()
@@ -67,13 +54,14 @@ func NewAnalyticServices(brokers []string) analyticServices {
 		client:        brokerClient,
 		brokers:       brokers,
 		workerList:    make(map[string]analyticWorker),
-		database:      connectToInfluxDB(),
+		// database:      connectToInfluxDB(),
 		topicList:     topicList,
 		brokersConfig: *brokerConfig,
 	}
 }
 
-func (a *analyticServices) spawnNewAnalyser(topic string) error {
+func (a *analyticServices) spawnNewAnalyser(topic string, initialOffset int64) error {
+	a.clusterConfig.Config.Consumer.Offsets.Initial = initialOffset
 	analyserCluster, err := cluster.NewConsumer(a.brokers, GroupID, []string{topic}, &a.clusterConfig)
 	if err != nil {
 		log.Fatalf("Failed to create a cluster of analyser")
@@ -98,8 +86,8 @@ func (a *analyticServices) checkIfTopicAlreadySubscribed(topic string) bool {
 	return true
 }
 
-func (a *analyticServices) spawnNewAnalyserForNewTopic(topic string) {
-	err := a.spawnNewAnalyser(topic)
+func (a *analyticServices) spawnNewAnalyserForNewTopic(topic string, messageOffset int64) {
+	err := a.spawnNewAnalyser(topic, sarama.OffsetOldest)
 	if err != nil {
 		log.Printf("Failed to create new worker for new topic")
 	}
@@ -116,7 +104,9 @@ func (a *analyticServices) Start() {
 	for _, topic := range topicList {
 		if strings.HasSuffix(topic, "_logs") {
 			if !a.checkIfTopicAlreadySubscribed(topic) {
-				a.spawnNewAnalyserForNewTopic(topic)
+				a.spawnNewAnalyser(topic, sarama.OffsetNewest)
+				worker := a.workerList[topic]
+				worker.Start()
 				fmt.Println("Topic: " + topic)
 			}
 		}
@@ -125,6 +115,7 @@ func (a *analyticServices) Start() {
 	return
 }
 
+//sleep
 func (a *analyticServices) refreshForNewTopics() {
 	for !a.isClosed {
 		newClient, err := setUpClient(a.brokers, &a.brokersConfig)
@@ -136,12 +127,13 @@ func (a *analyticServices) refreshForNewTopics() {
 			for _, topic := range clientTopics {
 				exist := a.checkIfTopicAlreadySubscribed(topic)
 				if !exist {
-					a.spawnNewAnalyserForNewTopic(topic)
+					a.spawnNewAnalyserForNewTopic(topic, sarama.OffsetOldest)
 					a.topicList = append(a.topicList, topic)
 				}
 			}
 		}
 		newClient.Close()
+		timekit.Sleep("5s")
 	}
 }
 

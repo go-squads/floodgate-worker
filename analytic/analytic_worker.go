@@ -38,6 +38,7 @@ func (w *analyticWorker) successReadMessage(message *sarama.ConsumerMessage) {
 }
 
 func (w *analyticWorker) Start() {
+	fmt.Println("Started")
 	go w.consumeMessage()
 }
 
