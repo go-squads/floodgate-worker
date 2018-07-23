@@ -73,7 +73,26 @@ func (influxDb *influxDb) InitDB() error {
 }
 
 func (influxDb *influxDb) InsertToInflux(MyDB string, measurement string, columnName string, value int, roundedTime time.Time) {
-	return
+	bp, err := client.NewBatchPoints(client.BatchPointsConfig{
+		Database:  MyDB,
+		Precision: "s",
+	})
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	value = value + influxDb.GetFieldValueIfExist(MyDB, columnName, measurement, roundedTime)
+
+	pt, err := client.NewPoint(measurement, nil, map[string]interface{}{columnName: value}, roundedTime)
+	if err != nil {
+		log.Fatal(err)
+	}
+	bp.AddPoint(pt)
+
+	fmt.Println(columnName + "-----" + fmt.Sprint(value))
+	if err := influxDb.DatabaseConnection.Write(bp); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func (influxDb *influxDb) GetFieldValueIfExist(MyDB string, columnName string, measurement string, roundedTime time.Time) int {
