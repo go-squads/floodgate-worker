@@ -1,2 +1,6 @@
 package: github.com/go-squads/floodgate-worker
-import: []
+import:
+- package: github.com/Shopify/sarama
+  version: v1.17.0
+- package: github.com/bsm/sarama-cluster
+  version: v2.1.13
