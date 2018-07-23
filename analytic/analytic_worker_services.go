@@ -104,7 +104,6 @@ func (a *analyticServices) Start() {
 				a.spawnNewAnalyser(topic, sarama.OffsetNewest)
 				worker := a.workerList[topic]
 				worker.Start()
-				fmt.Println("Topic: " + topic)
 			}
 		}
 	}

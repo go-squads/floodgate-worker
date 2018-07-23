@@ -11,6 +11,10 @@ import (
 	influx "github.com/go-squads/floodgate-worker/influxdb-handler"
 )
 
+const (
+	timeLayout = "2006-01-02T15:04:05Z07:00"
+)
+
 type AnalyticWorker interface {
 	OnSuccess(f func(*sarama.ConsumerMessage))
 }
@@ -50,7 +54,6 @@ func (w *analyticWorker) Start(f ...func(*sarama.ConsumerMessage)) {
 		w.OnSuccess(w.storeMessageToDB)
 	}
 
-	fmt.Println("Started")
 	go w.consumeMessage()
 }
 
@@ -60,7 +63,6 @@ func (w *analyticWorker) Stop() {
 	}
 
 	go func() {
-		fmt.Println("sent stop")
 		w.signalToStop <- 1
 	}()
 }
@@ -81,11 +83,15 @@ func (w *analyticWorker) consumeMessage() {
 }
 
 func (w *analyticWorker) storeMessageToDB(message *sarama.ConsumerMessage) {
+	timeVal := make(map[string]string)
+	_ = json.Unmarshal(message.Value, &timeVal)
+	timeToParse, _ := time.Parse(timeLayout, timeVal["@timestamp"])
 	columnName, value := ConvertMessageToInfluxField(message)
 	fmt.Println(columnName)
 
-	roundedTime := time.Date(message.Timestamp.Year(), message.Timestamp.Month(),
-		message.Timestamp.Day(), message.Timestamp.Hour(), 0, 0, 0, message.Timestamp.Location())
+	roundedTime := time.Date(timeToParse.Year(), timeToParse.Month(), timeToParse.Day(),
+		timeToParse.Hour(), 0, 0, 0, timeToParse.Location())
+	fmt.Println("Time:" + fmt.Sprint(roundedTime))
 	w.databaseClient.InsertToInflux("analyticsKafkaDB", message.Topic, columnName, value, roundedTime)
 	return
 }
