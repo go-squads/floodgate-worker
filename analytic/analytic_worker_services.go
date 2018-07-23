@@ -121,11 +121,11 @@ func (a *analyticServices) Start() {
 			}
 		}
 	}
-	a.testLoop()
+	a.refreshForNewTopics()
 	return
 }
 
-func (a *analyticServices) testLoop() {
+func (a *analyticServices) refreshForNewTopics() {
 	for !a.isClosed {
 		newClient, err := setUpClient(a.brokers, &a.brokersConfig)
 		if err != nil {
