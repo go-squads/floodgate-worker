@@ -1,6 +1,7 @@
 package dbhandler
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/url"
@@ -96,4 +97,30 @@ func (influxDb *influxDb) createDatabase(databaseName string) error {
 
 func (influxDb *influxDb) GetDatabaseName() string {
 	return influxDb.DatabaseName
+}
+
+func (influxDb *influxDb) GetFieldValueIfExist(MyDB string, columnName string, measurement string, roundedTime time.Time) int {
+	toMili := roundedTime.UnixNano() / int64(time.Nanosecond)
+	q := client.Query{
+		Command:  fmt.Sprintf("select \"%s\" from \"%s\" where time =%d", columnName, measurement, toMili),
+		Database: MyDB,
+	}
+
+	resp, err := influxDBcon.Query(q)
+	if err != nil {
+		log.Fatalln("Error: ", err)
+	}
+	if resp.Error() != nil {
+		log.Fatalln("Error2: ", resp.Error())
+	} else {
+		fmt.Println(fmt.Sprint(resp.Results[0].Series) + "=>>>>>" + fmt.Sprint(len(resp.Results[0].Series)))
+		if len(resp.Results[0].Series) != 0 {
+			res, err := resp.Results[0].Series[0].Values[0][1].(json.Number).Int64()
+			if err != nil {
+				log.Fatalln("Error: ", err)
+			}
+			return int(res)
+		}
+	}
+	return 0
 }
