@@ -15,6 +15,7 @@ type analyticWorker struct {
 	consumer      ClusterAnalyser
 	signalToStop  chan int
 	onSuccessFunc func(*sarama.ConsumerMessage)
+	refreshTopics func()
 }
 
 func NewAnalyticWorker(consumer ClusterAnalyser) *analyticWorker {
@@ -46,7 +47,7 @@ func (w *analyticWorker) Stop() {
 	}
 
 	go func() {
-		fmt.Println("sent stop signal")
+		fmt.Println("sent stop")
 		w.signalToStop <- 1
 	}()
 }

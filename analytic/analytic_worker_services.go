@@ -1,6 +1,7 @@
 package analytic
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -20,6 +21,9 @@ type analyticServices struct {
 	brokers       []string
 	workerList    map[string]analyticWorker
 	database      client.Client
+	topicList     []string
+	brokersConfig sarama.Config
+	isClosed      bool
 }
 
 func setUpConfig() cluster.Config {
@@ -54,6 +58,7 @@ func NewAnalyticServices(brokers []string) analyticServices {
 	brokerConfig := sarama.NewConfig()
 	analyserClusterConfig := setUpConfig()
 	brokerClient, err := setUpClient(brokers, brokerConfig)
+	topicList, _ := brokerClient.Topics()
 	if err != nil {
 		log.Printf("Failed to connect to broker...")
 	}
@@ -63,6 +68,8 @@ func NewAnalyticServices(brokers []string) analyticServices {
 		brokers:       brokers,
 		workerList:    make(map[string]analyticWorker),
 		database:      connectToInfluxDB(),
+		topicList:     topicList,
+		brokersConfig: *brokerConfig,
 	}
 }
 
@@ -73,6 +80,7 @@ func (a *analyticServices) spawnNewAnalyser(topic string) error {
 	}
 	worker := NewAnalyticWorker(analyserCluster)
 	a.workerList[topic] = *worker
+	fmt.Println("Spawned worker for " + topic)
 	return err
 }
 
@@ -81,9 +89,11 @@ func (a *analyticServices) spawnNewAnalyser(topic string) error {
 // check for new topics
 // make an array of workers - then iterate through it to start it?
 func (a *analyticServices) checkIfTopicAlreadySubscribed(topic string) bool {
-	_, exist := a.workerList[topic]
-	if !exist {
-		return false
+	if strings.HasSuffix(topic, "_logs") {
+		_, exist := a.workerList[topic]
+		if !exist {
+			return false
+		}
 	}
 	return true
 }
@@ -101,18 +111,42 @@ func (a *analyticServices) spawnNewAnalyserForNewTopic(topic string) {
 // Check for new topic when new message with new topic appears
 // sarama.CreateTopicsRequest
 func (a *analyticServices) Start() {
+	a.isClosed = false
 	topicList, _ := a.client.Topics()
 	for _, topic := range topicList {
 		if strings.HasSuffix(topic, "_logs") {
 			if !a.checkIfTopicAlreadySubscribed(topic) {
 				a.spawnNewAnalyserForNewTopic(topic)
+				fmt.Println("Topic: " + topic)
 			}
 		}
 	}
+	a.testLoop()
 	return
 }
 
+func (a *analyticServices) testLoop() {
+	for !a.isClosed {
+		newClient, err := setUpClient(a.brokers, &a.brokersConfig)
+		if err != nil {
+			fmt.Println("Error" + err.Error())
+		}
+		clientTopics, _ := newClient.Topics()
+		if len(a.topicList) != len(clientTopics) {
+			for _, topic := range clientTopics {
+				exist := a.checkIfTopicAlreadySubscribed(topic)
+				if !exist {
+					a.spawnNewAnalyserForNewTopic(topic)
+					a.topicList = append(a.topicList, topic)
+				}
+			}
+		}
+		newClient.Close()
+	}
+}
+
 func (a *analyticServices) Close() {
+	a.isClosed = true
 	topicList, _ := a.client.Topics()
 	for _, topic := range topicList {
 		worker, exist := a.workerList[topic]
@@ -124,5 +158,23 @@ func (a *analyticServices) Close() {
 	return
 }
 
+func (a *analyticServices) checkIfClosed() bool {
+	return a.isClosed
+}
+
 // Parse the Message
 // Increment the count
+// Get hour : use message.Timestamp.Hour()
+func (a *analyticServices) getMessageContent(message *sarama.ConsumerMessage) map[string]string {
+	messageContent := make(map[string]string)
+	err := json.Unmarshal(message.Value, &messageContent)
+	if err != nil {
+		log.Printf("Failed conversion")
+	}
+	return messageContent
+}
+
+// func (a *analyticServics) storeToDB(message *sarama.ConsumerMessage) {
+// 	messageContent := getMessageContent(message)
+
+// }
