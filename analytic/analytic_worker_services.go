@@ -1,7 +1,6 @@
 package analytic
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -9,7 +8,7 @@ import (
 	"github.com/BaritoLog/go-boilerplate/timekit"
 	"github.com/Shopify/sarama"
 	cluster "github.com/bsm/sarama-cluster"
-	client "github.com/influxdata/influxdb/client/v2"
+	influx "github.com/go-squads/floodgate-worker/influxdb-handler"
 )
 
 const (
@@ -21,7 +20,7 @@ type analyticServices struct {
 	client        sarama.Client
 	brokers       []string
 	workerList    map[string]analyticWorker
-	database      client.Client
+	database      influx.InfluxDB
 	topicList     []string
 	brokersConfig sarama.Config
 	isClosed      bool
@@ -54,7 +53,7 @@ func NewAnalyticServices(brokers []string) analyticServices {
 		client:        brokerClient,
 		brokers:       brokers,
 		workerList:    make(map[string]analyticWorker),
-		// database:      connectToInfluxDB(),
+		database:      influx.NewInfluxService(8086, "localhost", "analyticsKafkaDB", "", ""),
 		topicList:     topicList,
 		brokersConfig: *brokerConfig,
 	}
@@ -66,7 +65,7 @@ func (a *analyticServices) spawnNewAnalyser(topic string, initialOffset int64) e
 	if err != nil {
 		log.Fatalf("Failed to create a cluster of analyser")
 	}
-	worker := NewAnalyticWorker(analyserCluster)
+	worker := NewAnalyticWorker(analyserCluster, a.database)
 	a.workerList[topic] = *worker
 	fmt.Println("Spawned worker for " + topic)
 	return err
@@ -94,6 +93,10 @@ func (a *analyticServices) spawnNewAnalyserForNewTopic(topic string, messageOffs
 
 func (a *analyticServices) Start() {
 	a.isClosed = false
+	err := a.database.InitDB()
+	if err != nil {
+		log.Printf("Failed to init InfluxDB")
+	}
 	topicList, _ := a.client.Topics()
 	for _, topic := range topicList {
 		if strings.HasSuffix(topic, "_logs") {
@@ -145,13 +148,4 @@ func (a *analyticServices) Close() {
 
 func (a *analyticServices) checkIfClosed() bool {
 	return a.isClosed
-}
-
-func (a *analyticServices) getMessageContent(message *sarama.ConsumerMessage) map[string]string {
-	messageContent := make(map[string]string)
-	err := json.Unmarshal(message.Value, &messageContent)
-	if err != nil {
-		log.Printf("Failed conversion")
-	}
-	return messageContent
 }

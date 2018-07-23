@@ -1,10 +1,14 @@
 package analytic
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
+	"sort"
+	"time"
 
 	"github.com/Shopify/sarama"
+	influx "github.com/go-squads/floodgate-worker/influxdb-handler"
 )
 
 type AnalyticWorker interface {
@@ -12,16 +16,18 @@ type AnalyticWorker interface {
 }
 
 type analyticWorker struct {
-	consumer      ClusterAnalyser
-	signalToStop  chan int
-	onSuccessFunc func(*sarama.ConsumerMessage)
-	refreshTopics func()
+	consumer       ClusterAnalyser
+	signalToStop   chan int
+	onSuccessFunc  func(*sarama.ConsumerMessage)
+	refreshTopics  func()
+	databaseClient influx.InfluxDB
 }
 
-func NewAnalyticWorker(consumer ClusterAnalyser) *analyticWorker {
+func NewAnalyticWorker(consumer ClusterAnalyser, databaseCon influx.InfluxDB) *analyticWorker {
 	return &analyticWorker{
-		consumer:     consumer,
-		signalToStop: make(chan int),
+		consumer:       consumer,
+		signalToStop:   make(chan int),
+		databaseClient: databaseCon,
 	}
 }
 
@@ -37,7 +43,13 @@ func (w *analyticWorker) successReadMessage(message *sarama.ConsumerMessage) {
 	}
 }
 
-func (w *analyticWorker) Start() {
+func (w *analyticWorker) Start(f ...func(*sarama.ConsumerMessage)) {
+	if f != nil {
+		w.OnSuccess(f[0])
+	} else {
+		w.OnSuccess(w.storeMessageToDB)
+	}
+
 	fmt.Println("Started")
 	go w.consumeMessage()
 }
@@ -66,4 +78,35 @@ func (w *analyticWorker) consumeMessage() {
 			return
 		}
 	}
+}
+
+func (w *analyticWorker) storeMessageToDB(message *sarama.ConsumerMessage) {
+	columnName, value := ConvertMessageToInfluxField(message)
+	fmt.Println(columnName)
+
+	roundedTime := time.Date(message.Timestamp.Year(), message.Timestamp.Month(),
+		message.Timestamp.Day(), message.Timestamp.Hour(), 0, 0, 0, message.Timestamp.Location())
+	w.databaseClient.InsertToInflux("analyticsKafkaDB", message.Topic, columnName, value, roundedTime)
+	return
+}
+
+func ConvertMessageToInfluxField(message *sarama.ConsumerMessage) (string, int) {
+	messageVal := make(map[string]string)
+	_ = json.Unmarshal(message.Value, &messageVal)
+
+	delete(messageVal, "@timestamp")
+	delete(messageVal, "_ctx")
+
+	var listOfValues []string
+	for _, v := range messageVal {
+		listOfValues = append(listOfValues, v)
+	}
+
+	sort.Strings(listOfValues)
+	var columnName string
+	for _, v := range listOfValues {
+		columnName += "_" + v
+	}
+
+	return columnName[1:len(columnName)], 1
 }
