@@ -72,10 +72,6 @@ func (a *analyticServices) spawnNewAnalyser(topic string, initialOffset int64) e
 	return err
 }
 
-// Start
-// make a new client
-// check for new topics
-// make an array of workers - then iterate through it to start it?
 func (a *analyticServices) checkIfTopicAlreadySubscribed(topic string) bool {
 	if strings.HasSuffix(topic, "_logs") {
 		_, exist := a.workerList[topic]
@@ -96,8 +92,6 @@ func (a *analyticServices) spawnNewAnalyserForNewTopic(topic string, messageOffs
 	return
 }
 
-// Check for new topic when new message with new topic appears
-// sarama.CreateTopicsRequest
 func (a *analyticServices) Start() {
 	a.isClosed = false
 	topicList, _ := a.client.Topics()
@@ -115,7 +109,6 @@ func (a *analyticServices) Start() {
 	return
 }
 
-//sleep
 func (a *analyticServices) refreshForNewTopics() {
 	for !a.isClosed {
 		newClient, err := setUpClient(a.brokers, &a.brokersConfig)
@@ -154,9 +147,6 @@ func (a *analyticServices) checkIfClosed() bool {
 	return a.isClosed
 }
 
-// Parse the Message
-// Increment the count
-// Get hour : use message.Timestamp.Hour()
 func (a *analyticServices) getMessageContent(message *sarama.ConsumerMessage) map[string]string {
 	messageContent := make(map[string]string)
 	err := json.Unmarshal(message.Value, &messageContent)
@@ -165,8 +155,3 @@ func (a *analyticServices) getMessageContent(message *sarama.ConsumerMessage) ma
 	}
 	return messageContent
 }
-
-// func (a *analyticServics) storeToDB(message *sarama.ConsumerMessage) {
-// 	messageContent := getMessageContent(message)
-
-// }

@@ -2,6 +2,7 @@ package dbhandler
 
 import (
 	"fmt"
+	"log"
 	"net/url"
 	"time"
 
@@ -15,11 +16,12 @@ type InfluxDB interface {
 }
 
 type influxDb struct {
-	Host         string `json:"host"`
-	Port         int    `json:"port"`
-	DatabaseName string `json:"databaseName"`
-	Username     string `json:"username"`
-	Password     string `json:"password"`
+	Host               string `json:"host"`
+	Port               int    `json:"port"`
+	DatabaseName       string `json:"databaseName"`
+	Username           string `json:"username"`
+	Password           string `json:"password"`
+	DatabaseConnection client.Client
 }
 
 func NewInfluxService(port int, host, dbname, username, password string) InfluxDB {
@@ -33,8 +35,40 @@ func NewInfluxService(port int, host, dbname, username, password string) InfluxD
 }
 
 func (influxDb *influxDb) InitDB() error {
-	_, err := url.Parse(fmt.Sprintf("http://%s:%d", influxDb.Host, influxDb.Port))
-	return err
+	fmt.Println("Trying to connect to " + influxDb.DatabaseName + " database")
+	addr, err := url.Parse(fmt.Sprintf("http://%s:%d", influxDb.Host, influxDb.Port))
+	if err != nil {
+		println("InfluxDB : Invalid Url,Please check domain name given\nError Details: ", err.Error())
+		return err
+	}
+
+	influxDb.DatabaseConnection, err = client.NewHTTPClient(client.HTTPConfig{
+
+		Addr:     addr.String(),
+		Username: influxDb.Username,
+		Password: influxDb.Password,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, _, err = influxDb.DatabaseConnection.Ping(10 * time.Second)
+
+	if err != nil {
+		println("InfluxDB : Failed to connect to Database . Please check the details entered\nError Details: ", err.Error())
+		return err
+	}
+
+	createDbErr := influxDb.createDatabase(influxDb.DatabaseName)
+	if createDbErr != nil {
+		if createDbErr.Error() != "database already exists" {
+			println("InfluxDB : Failed to create Database")
+			return createDbErr
+		}
+
+	}
+
+	fmt.Println("Successfully connected to " + influxDb.DatabaseName + " database!")
+	return nil
 }
 
 func (influxDb *influxDb) InsertToInflux(MyDB string, measurement string, columnName string, value int, roundedTime time.Time) {
@@ -45,18 +79,21 @@ func (influxDb *influxDb) GetFieldValueIfExist(MyDB string, columnName string, m
 	return 0
 }
 
-func (influxDb *influxDb) connectToInflux() (client.Client, error) {
-	fmt.Println("Trying to connect to " + influxDb.DatabaseName + " database")
-	addr, err := url.Parse(fmt.Sprintf("http://%s:%d", influxDb.Host, influxDb.Port))
-	if err != nil {
-		println("InfluxDB : Invalid Url,Please check domain name given\nError Details: ", err.Error())
-		return nil, err
+func (influxDb *influxDb) createDatabase(databaseName string) error {
+	command := fmt.Sprintf("create database %s", databaseName)
+	q := client.Query{
+		Command:  command,
+		Database: "",
 	}
+	if response, err := influxDb.DatabaseConnection.Query(q); err == nil {
+		if response.Error() != nil {
+			fmt.Println(response.Error())
+			return response.Error()
+		}
+	}
+	return nil
+}
 
-	influxDBconnection, err := client.NewHTTPClient(client.HTTPConfig{
-		Addr:     addr.String(),
-		Username: influxDb.Username,
-		Password: influxDb.Password,
-	})
-	return influxDBconnection, err
+func (influxDb *influxDb) GetDatabaseName() string {
+	return influxDb.DatabaseName
 }
