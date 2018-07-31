@@ -3,7 +3,6 @@ package dbhandler
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/url"
 	"time"
 
@@ -50,7 +49,7 @@ func (influxDb *influxDb) InitDB() error {
 		Password: influxDb.Password,
 	})
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 	_, _, err = influxDb.DatabaseConnection.Ping(10 * time.Second)
 
@@ -79,22 +78,21 @@ func (influxDb *influxDb) InsertToInflux(measurement string, columnName string, 
 			Precision: "s",
 		})
 		if err != nil {
-			fmt.Println(err)
+			return err
 		}
 
 		value = value + influxDb.GetFieldValueIfExist(columnName, measurement, roundedTime)
 
 		pt, err := client.NewPoint(measurement, nil, map[string]interface{}{columnName: value}, roundedTime)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
 		bp.AddPoint(pt)
 
 		fmt.Println(columnName + "-----" + fmt.Sprint(value))
 		if err := influxDb.DatabaseConnection.Write(bp); err != nil {
-			log.Fatal(err)
+			return err
 		}
-		return err
 	}
 	return nil
 }
@@ -108,16 +106,16 @@ func (influxDb *influxDb) GetFieldValueIfExist(columnName string, measurement st
 
 	resp, err := influxDb.DatabaseConnection.Query(q)
 	if err != nil {
-		log.Fatalln("Error: ", err)
+		return 0
 	}
 	if resp.Error() != nil {
-		log.Fatalln("Error2: ", resp.Error())
+		return 0
 	} else {
 		fmt.Println(fmt.Sprint(resp.Results[0].Series) + "=>>>>>" + fmt.Sprint(len(resp.Results[0].Series)))
 		if len(resp.Results[0].Series) != 0 {
 			res, err := resp.Results[0].Series[0].Values[0][1].(json.Number).Int64()
 			if err != nil {
-				log.Fatalln("Error: ", err)
+				return 0
 			}
 			return int(res)
 		}
@@ -131,15 +129,28 @@ func (influxDb *influxDb) createDatabase(databaseName string) error {
 		Command:  command,
 		Database: "",
 	}
-	if response, err := influxDb.DatabaseConnection.Query(q); err == nil {
+	return influxDb.basicQuery(q)
+}
+
+func (influxDb *influxDb) DeleteDatabase() error {
+	command := fmt.Sprintf("drop database %s", influxDb.DatabaseName)
+	q := client.Query{
+		Command:  command,
+		Database: "",
+	}
+	return influxDb.basicQuery(q)
+}
+
+func (influxDb *influxDb) GetDatabaseName() string {
+	return influxDb.DatabaseName
+}
+
+func (influxDb *influxDb) basicQuery(query client.Query) error {
+	if response, err := influxDb.DatabaseConnection.Query(query); err == nil {
 		if response.Error() != nil {
 			fmt.Println(response.Error())
 			return response.Error()
 		}
 	}
 	return nil
-}
-
-func (influxDb *influxDb) GetDatabaseName() string {
-	return influxDb.DatabaseName
 }
