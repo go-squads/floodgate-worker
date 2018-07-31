@@ -2,6 +2,7 @@ package dbhandler
 
 import (
 	"fmt"
+	"time"
 	"testing"
 
 	mock_dbhandler "github.com/go-squads/floodgate-worker/mock"
@@ -28,9 +29,8 @@ func TestInsertToInflux(t *testing.T) {
     defer ctrl.Finish()
 
     influxDb := mock_dbhandler.NewMockInfluxDB(ctrl)
-    influxDb.EXPECT().InsertToInflux(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+    influxDb.EXPECT().InsertToInflux(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
 
     influx := NewInfluxService(8086, "localhost", "analytics-test", "gopayadmin", "gopayadmin")
-
-    assert.Equal(t, influx.InsertToInflux("test", "gopay-test", "500_GET", 1, time.Now()), nil)
+    assert.Equal(t, influx.InsertToInflux("gopay-test", "500_GET", 1, time.Now()), nil)
 }

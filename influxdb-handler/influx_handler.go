@@ -12,7 +12,7 @@ import (
 
 type InfluxDB interface {
 	InitDB() error
-	InsertToInflux(measurement string, columnName string, value int, roundedTime time.Time)
+	InsertToInflux(measurement string, columnName string, value int, roundedTime time.Time) error
 	GetFieldValueIfExist(columnName string, measurement string, roundedTime time.Time) int
 }
 
@@ -72,7 +72,7 @@ func (influxDb *influxDb) InitDB() error {
 	return nil
 }
 
-func (influxDb *influxDb) InsertToInflux(measurement string, columnName string, value int, roundedTime time.Time) {
+func (influxDb *influxDb) InsertToInflux(measurement string, columnName string, value int, roundedTime time.Time) error {
 	if value != 0 {
 		bp, err := client.NewBatchPoints(client.BatchPointsConfig{
 			Database:  influxDb.DatabaseName,
@@ -94,7 +94,9 @@ func (influxDb *influxDb) InsertToInflux(measurement string, columnName string, 
 		if err := influxDb.DatabaseConnection.Write(bp); err != nil {
 			log.Fatal(err)
 		}
+		return err
 	}
+	return nil
 }
 
 func (influxDb *influxDb) GetFieldValueIfExist(columnName string, measurement string, roundedTime time.Time) int {

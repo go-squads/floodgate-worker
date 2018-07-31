@@ -102,7 +102,7 @@ func ConvertMessageToInfluxField(message *sarama.ConsumerMessage) (string, int) 
 
 	delete(messageVal, "@timestamp")
 	delete(messageVal, "_ctx")
-	
+
 	var listOfValues []string
 	for _, v := range messageVal {
 		listOfValues = append(listOfValues, v)

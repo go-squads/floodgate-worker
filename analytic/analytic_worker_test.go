@@ -81,6 +81,7 @@ func TestAnalyticWorkerZeroParam_ErrorBadkafka(t *testing.T) {
 	worker := NewAnalyticWorker(consumer, influxDB)
 
 	var got *sarama.ConsumerMessage
+	worker.OnSuccess(func(message *sarama.ConsumerMessage) { got = message })
 
 	worker.Start()
 	defer worker.Stop()
@@ -88,8 +89,28 @@ func TestAnalyticWorkerZeroParam_ErrorBadkafka(t *testing.T) {
 	timekit.Sleep("1ms")
 	fmt.Println("------" + fmt.Sprint(want))
 	fmt.Println("======" + fmt.Sprint(got))
-	assert.Equal(t, want, got, "they should be equal")
+	assert.NotEqual(t, want, got, "they should not be equal")
 }
+
+func TestMessageConvertedToInfluxFieldRight(t * testing.T) {
+	testMessage := []byte(`{"Name":"Wednesday","@timestamp":"test"}`)
+	
+	test := &sarama.ConsumerMessage{
+		Key:            []byte{},
+		Value:          testMessage,
+		Topic:          "analytic-test",
+		Partition:      0,
+		Offset:         0,
+		Timestamp:      time.Now(),
+		BlockTimestamp: time.Now(),
+		Headers:        nil,
+	}
+
+	colName, value := ConvertMessageToInfluxField(test)
+	assert.Equal(t, "Wednesday", colName, "Column name should be Name")
+	assert.Equal(t, 1, value, "Value should be one")
+}
+
 
 func sampleMsg(message ...*sarama.ConsumerMessage) <-chan *sarama.ConsumerMessage {
 	newMsg := make(chan *sarama.ConsumerMessage)
