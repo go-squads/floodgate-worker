@@ -107,7 +107,7 @@ func TestMessageConvertedToInfluxFieldRight(t * testing.T) {
 	}
 
 	colName, value := ConvertMessageToInfluxField(test)
-	assert.Equal(t, "200_POST", colName, "Column name should be Name")
+	assert.Equal(t, "200_POST", colName, "Column name should be 200_POST")
 	assert.Equal(t, 1, value, "Value should be one")
 }
 
