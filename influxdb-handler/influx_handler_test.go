@@ -22,3 +22,15 @@ func TestInfluxDB_invalidDomain(t *testing.T) {
 
 	assert.Equal(t, influxDb.InitDB().Error(), influx.InitDB().Error())
 }
+
+func TestInsertToInflux(t *testing.T) {
+    ctrl := gomock.NewController(t)
+    defer ctrl.Finish()
+
+    influxDb := mock_dbhandler.NewMockInfluxDB(ctrl)
+    influxDb.EXPECT().InsertToInflux(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any())
+
+    influx := NewInfluxService(8086, "localhost", "analytics-test", "gopayadmin", "gopayadmin")
+
+    assert.Equal(t, influx.InsertToInflux("test", "gopay-test", "500_GET", 1, time.Now()), nil)
+}

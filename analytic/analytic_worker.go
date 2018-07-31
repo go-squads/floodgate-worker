@@ -92,7 +92,7 @@ func (w *analyticWorker) storeMessageToDB(message *sarama.ConsumerMessage) {
 	roundedTime := time.Date(timeToParse.Year(), timeToParse.Month(), timeToParse.Day(),
 		timeToParse.Hour(), 0, 0, 0, timeToParse.Location())
 	fmt.Println("Time:" + fmt.Sprint(roundedTime))
-	w.databaseClient.InsertToInflux("analyticsKafkaDB", message.Topic, columnName, value, roundedTime)
+	w.databaseClient.InsertToInflux(message.Topic, columnName, value, roundedTime)
 	return
 }
 
@@ -102,7 +102,7 @@ func ConvertMessageToInfluxField(message *sarama.ConsumerMessage) (string, int) 
 
 	delete(messageVal, "@timestamp")
 	delete(messageVal, "_ctx")
-
+	
 	var listOfValues []string
 	for _, v := range messageVal {
 		listOfValues = append(listOfValues, v)
@@ -114,5 +114,10 @@ func ConvertMessageToInfluxField(message *sarama.ConsumerMessage) (string, int) 
 		columnName += "_" + v
 	}
 
-	return columnName[1:len(columnName)], 1
+	if len(columnName) > 0 {
+		return columnName[1:len(columnName)], 1
+	} else {
+		return "", 0
+	}
+	
 }

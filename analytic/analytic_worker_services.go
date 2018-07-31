@@ -77,8 +77,9 @@ func (a *analyticServices) checkIfTopicAlreadySubscribed(topic string) bool {
 		if !exist {
 			return false
 		}
+		return true
 	}
-	return true
+	return false
 }
 
 func (a *analyticServices) spawnNewAnalyserForNewTopic(topic string, messageOffset int64) {

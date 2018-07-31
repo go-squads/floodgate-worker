@@ -12,8 +12,8 @@ import (
 
 type InfluxDB interface {
 	InitDB() error
-	InsertToInflux(MyDB string, measurement string, columnName string, value int, roundedTime time.Time)
-	GetFieldValueIfExist(MyDB string, columnName string, measurement string, roundedTime time.Time) int
+	InsertToInflux(measurement string, columnName string, value int, roundedTime time.Time)
+	GetFieldValueIfExist(columnName string, measurement string, roundedTime time.Time) int
 }
 
 type influxDb struct {
@@ -26,7 +26,7 @@ type influxDb struct {
 }
 
 func NewInfluxService(port int, host, dbname, username, password string) InfluxDB {
-	return &influxDb{
+	return &influxDb {
 		Host:         host,
 		Port:         port,
 		DatabaseName: dbname,
@@ -72,34 +72,36 @@ func (influxDb *influxDb) InitDB() error {
 	return nil
 }
 
-func (influxDb *influxDb) InsertToInflux(MyDB string, measurement string, columnName string, value int, roundedTime time.Time) {
-	bp, err := client.NewBatchPoints(client.BatchPointsConfig{
-		Database:  MyDB,
-		Precision: "s",
-	})
-	if err != nil {
-		fmt.Println(err)
-	}
+func (influxDb *influxDb) InsertToInflux(measurement string, columnName string, value int, roundedTime time.Time) {
+	if value != 0 {
+		bp, err := client.NewBatchPoints(client.BatchPointsConfig{
+			Database:  influxDb.DatabaseName,
+			Precision: "s",
+		})
+		if err != nil {
+			fmt.Println(err)
+		}
 
-	value = value + influxDb.GetFieldValueIfExist(MyDB, columnName, measurement, roundedTime)
+		value = value + influxDb.GetFieldValueIfExist(columnName, measurement, roundedTime)
 
-	pt, err := client.NewPoint(measurement, nil, map[string]interface{}{columnName: value}, roundedTime)
-	if err != nil {
-		log.Fatal(err)
-	}
-	bp.AddPoint(pt)
+		pt, err := client.NewPoint(measurement, nil, map[string]interface{}{columnName: value}, roundedTime)
+		if err != nil {
+			log.Fatal(err)
+		}
+		bp.AddPoint(pt)
 
-	fmt.Println(columnName + "-----" + fmt.Sprint(value))
-	if err := influxDb.DatabaseConnection.Write(bp); err != nil {
-		log.Fatal(err)
+		fmt.Println(columnName + "-----" + fmt.Sprint(value))
+		if err := influxDb.DatabaseConnection.Write(bp); err != nil {
+			log.Fatal(err)
+		}
 	}
 }
 
-func (influxDb *influxDb) GetFieldValueIfExist(MyDB string, columnName string, measurement string, roundedTime time.Time) int {
+func (influxDb *influxDb) GetFieldValueIfExist(columnName string, measurement string, roundedTime time.Time) int {
 	toMili := roundedTime.UnixNano() / int64(time.Nanosecond)
 	q := client.Query{
 		Command:  fmt.Sprintf("select \"%s\" from \"%s\" where time =%d", columnName, measurement, toMili),
-		Database: MyDB,
+		Database: influxDb.DatabaseName,
 	}
 
 	resp, err := influxDb.DatabaseConnection.Query(q)

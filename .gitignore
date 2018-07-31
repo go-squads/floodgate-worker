@@ -3,10 +3,7 @@
 *.dll
 *.so
 *.dylib
-<<<<<<< HEAD
 .vs/slnx.sqlite
-=======
->>>>>>> 3506733fdc0f483d4a2902106364c6d06c60a353
 
 *.test
 
