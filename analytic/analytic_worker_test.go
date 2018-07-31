@@ -93,7 +93,7 @@ func TestAnalyticWorkerZeroParam_ErrorBadkafka(t *testing.T) {
 }
 
 func TestMessageConvertedToInfluxFieldRight(t * testing.T) {
-	testMessage := []byte(`{"Name":"Wednesday","@timestamp":"test"}`)
+	testMessage := []byte(`{"Method":"POST","Code":"200","@timestamp":"test"}`)
 	
 	test := &sarama.ConsumerMessage{
 		Key:            []byte{},
@@ -107,10 +107,26 @@ func TestMessageConvertedToInfluxFieldRight(t * testing.T) {
 	}
 
 	colName, value := ConvertMessageToInfluxField(test)
-	assert.Equal(t, "Wednesday", colName, "Column name should be Name")
+	assert.Equal(t, "200_POST", colName, "Column name should be Name")
 	assert.Equal(t, 1, value, "Value should be one")
 }
 
+func TestBadMessageConvertToInfluxField(t *testing.T) {
+	test := &sarama.ConsumerMessage{
+		Key:            []byte{},
+		Value:          []byte{10, 20},
+		Topic:          "analytic-test",
+		Partition:      0,
+		Offset:         0,
+		Timestamp:      time.Now(),
+		BlockTimestamp: time.Now(),
+		Headers:        nil,
+	}
+
+	colName, value := ConvertMessageToInfluxField(test)
+	assert.Equal(t, "", colName, "Column Name returned should be empty")
+	assert.Equal(t, 0, value, "Value returned should be zero")
+}
 
 func sampleMsg(message ...*sarama.ConsumerMessage) <-chan *sarama.ConsumerMessage {
 	newMsg := make(chan *sarama.ConsumerMessage)

@@ -18,6 +18,8 @@ if it detects that the message contains a new topic
 
 cluster_analyser is an interface for *sarama.consumer to allow us to mock it for testing.
 
+AnalyticServices creates a Service which will spawn a Consumer group for every topic
+
 ## Installation Instructions
 
 
