@@ -3,16 +3,16 @@ package analytic
 import (
 	"fmt"
 	"log"
+	"os"
+	"strconv"
 	"strings"
 
 	"github.com/BaritoLog/go-boilerplate/timekit"
 	"github.com/Shopify/sarama"
 	cluster "github.com/bsm/sarama-cluster"
 	influx "github.com/go-squads/floodgate-worker/influxdb-handler"
-)
 
-const (
-	GroupID = "StreamAnalyser"
+	"github.com/joho/godotenv"
 )
 
 type analyticServices struct {
@@ -43,8 +43,20 @@ func setUpClient(brokers []string, config *sarama.Config) (sarama.Client, error)
 func NewAnalyticServices(brokers []string) analyticServices {
 	brokerConfig := sarama.NewConfig()
 	analyserClusterConfig := setUpConfig()
-	brokerClient, err := setUpClient(brokers, brokerConfig)
+	brokerClient, _ := setUpClient(brokers, brokerConfig)
 	topicList, _ := brokerClient.Topics()
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	influxPort, _ := strconv.Atoi(os.Getenv("INFLUX_PORT"))
+	influxHost := os.Getenv("INFLUX_HOST")
+	influxDbName := os.Getenv("INFLUX_DB")
+	influxUsername := os.Getenv("INFLUX_USERNAME")
+	influxPassword := os.Getenv("INFLUX_PASSWORD")
+
 	if err != nil {
 		log.Printf("Failed to connect to broker...")
 	}
@@ -53,7 +65,7 @@ func NewAnalyticServices(brokers []string) analyticServices {
 		client:        brokerClient,
 		brokers:       brokers,
 		workerList:    make(map[string]analyticWorker),
-		database:      influx.NewInfluxService(8086, "localhost", "analyticsKafkaDB", "", ""),
+		database:      influx.NewInfluxService(influxPort, influxHost, influxDbName, influxUsername, influxPassword),
 		topicList:     topicList,
 		brokersConfig: *brokerConfig,
 	}
@@ -61,7 +73,7 @@ func NewAnalyticServices(brokers []string) analyticServices {
 
 func (a *analyticServices) spawnNewAnalyser(topic string, initialOffset int64) error {
 	a.clusterConfig.Config.Consumer.Offsets.Initial = initialOffset
-	analyserCluster, err := cluster.NewConsumer(a.brokers, GroupID, []string{topic}, &a.clusterConfig)
+	analyserCluster, err := cluster.NewConsumer(a.brokers, os.Getenv("CONSUMER_GROUP_ID"), []string{topic}, &a.clusterConfig)
 	if err != nil {
 		log.Fatalf("Failed to create a cluster of analyser")
 	}

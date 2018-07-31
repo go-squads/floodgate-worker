@@ -11,10 +11,6 @@ import (
 	influx "github.com/go-squads/floodgate-worker/influxdb-handler"
 )
 
-const (
-	timeLayout = "2006-01-02T15:04:05Z07:00"
-)
-
 type AnalyticWorker interface {
 	OnSuccess(f func(*sarama.ConsumerMessage))
 }
@@ -85,7 +81,7 @@ func (w *analyticWorker) consumeMessage() {
 func (w *analyticWorker) storeMessageToDB(message *sarama.ConsumerMessage) {
 	timeVal := make(map[string]string)
 	_ = json.Unmarshal(message.Value, &timeVal)
-	timeToParse, _ := time.Parse(timeLayout, timeVal["@timestamp"])
+	timeToParse, _ := time.Parse(os.Getenv("TIME_LAYOUT"), timeVal["@timestamp"])
 	columnName, value := ConvertMessageToInfluxField(message)
 	fmt.Println(columnName)
 
@@ -119,5 +115,5 @@ func ConvertMessageToInfluxField(message *sarama.ConsumerMessage) (string, int) 
 	} else {
 		return "", 0
 	}
-	
+
 }
