@@ -3,11 +3,14 @@ package analytic
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"sort"
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/joho/godotenv"
+
 	influx "github.com/go-squads/floodgate-worker/influxdb-handler"
 )
 
@@ -24,6 +27,10 @@ type analyticWorker struct {
 }
 
 func NewAnalyticWorker(consumer ClusterAnalyser, databaseCon influx.InfluxDB) *analyticWorker {
+	err := godotenv.Load(os.ExpandEnv("$GOPATH/src/github.com/go-squads/floodgate-worker/.env"))
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 	return &analyticWorker{
 		consumer:       consumer,
 		signalToStop:   make(chan int),
