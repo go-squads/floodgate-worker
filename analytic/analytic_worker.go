@@ -93,7 +93,7 @@ func (w *analyticWorker) storeMessageToDB(message *sarama.ConsumerMessage) {
 }
 
 func ConvertMessageToInfluxField(message *sarama.ConsumerMessage) (string, int) {
-	messageVal := make(map[string]string)
+	messageVal := make(map[string]interface{})
 	_ = json.Unmarshal(message.Value, &messageVal)
 
 	delete(messageVal, "@timestamp")
@@ -101,7 +101,7 @@ func ConvertMessageToInfluxField(message *sarama.ConsumerMessage) (string, int) 
 
 	var listOfValues []string
 	for _, v := range messageVal {
-		listOfValues = append(listOfValues, v)
+		listOfValues = append(listOfValues, fmt.Sprint(v))
 	}
 
 	sort.Strings(listOfValues)

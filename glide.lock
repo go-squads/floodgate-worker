@@ -1,0 +1,60 @@
+hash: d54b4d4c4dfc598962d94ecb73ddbc1370cd9d6be1b6704040502f47a48832e4
+updated: 2018-08-01T10:51:47.451895+07:00
+imports:
+- name: github.com/BaritoLog/go-boilerplate
+  version: 20c4c30023960bc27eb5e4662207a0bcaae04f11
+  subpackages:
+  - timekit
+- name: github.com/bouk/monkey
+  version: 5df1f207ff77e025801505ae4d903133a0b4353f
+- name: github.com/bsm/sarama-cluster
+  version: cf455bc755fe41ac9bb2861e7a961833d9c2ecc3
+- name: github.com/davecgh/go-spew
+  version: 8991bc29aa16c548c550c7ff78260e27b9ab7c73
+  subpackages:
+  - spew
+- name: github.com/eapache/go-resiliency
+  version: ea41b0fad31007accc7f806884dcdf3da98b79ce
+  subpackages:
+  - breaker
+- name: github.com/eapache/go-xerial-snappy
+  version: 040cc1a32f578808623071247fdbd5cc43f37f5f
+- name: github.com/eapache/queue
+  version: 093482f3f8ce946c05bcba64badd2c82369e084d
+- name: github.com/golang/mock
+  version: 22bbf0ddf08105dfa364d0a2fa619dfa71014af5
+  subpackages:
+  - gomock
+- name: github.com/golang/snappy
+  version: 2e65f85255dbc3072edf28d6b5b8efc472979f5a
+- name: github.com/influxdata/influxdb
+  version: 3e12599a44acc297a5f20b89cec70767a3adcb88
+  subpackages:
+  - client/v2
+  - models
+  - pkg/escape
+- name: github.com/joho/godotenv
+  version: 1709ab122c988931ad53508747b3c061400c2984
+- name: github.com/pierrec/lz4
+  version: 6b9367c9ff401dbc54fabce3fb8d972e799b702d
+  subpackages:
+  - internal/xxh32
+- name: github.com/rcrowley/go-metrics
+  version: e2704e165165ec55d062f5919b4b29494e9fa790
+- name: github.com/Shopify/sarama
+  version: 35324cf48e33d8260e1c7c18854465a904ade249
+- name: github.com/urfave/cli
+  version: 8e01ec4cd3e2d84ab2fe90d8210528ffbb06d8ff
+- name: golang.org/x/net
+  version: 49c15d80dfbc983ea25246ee959d970efe09ec09
+  subpackages:
+  - context
+testImports:
+- name: github.com/pmezard/go-difflib
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  subpackages:
+  - difflib
+- name: github.com/stretchr/testify
+  version: f35b8ab0b5a2cef36673838d662e249dd9c94686
+  subpackages:
+  - assert
