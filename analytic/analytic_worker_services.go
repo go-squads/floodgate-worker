@@ -89,9 +89,8 @@ func (a *analyticServices) checkIfTopicAlreadySubscribed(topic string) bool {
 		if !exist {
 			return false
 		}
-		return true
 	}
-	return false
+	return true
 }
 
 func (a *analyticServices) spawnNewAnalyserForNewTopic(topic string, messageOffset int64) {
@@ -112,14 +111,13 @@ func (a *analyticServices) Start() {
 	}
 	topicList, _ := a.client.Topics()
 	for _, topic := range topicList {
-		if strings.HasSuffix(topic, "_logs") {
-			if !a.checkIfTopicAlreadySubscribed(topic) {
-				a.spawnNewAnalyser(topic, sarama.OffsetNewest)
-				worker := a.workerList[topic]
-				worker.Start()
-			}
+		if !a.checkIfTopicAlreadySubscribed(topic) {
+			a.spawnNewAnalyser(topic, sarama.OffsetNewest)
+			worker := a.workerList[topic]
+			worker.Start()
 		}
 	}
+
 	a.refreshForNewTopics()
 	return
 }
@@ -138,10 +136,11 @@ func (a *analyticServices) refreshForNewTopics() {
 					a.spawnNewAnalyserForNewTopic(topic, sarama.OffsetOldest)
 					a.topicList = append(a.topicList, topic)
 				}
+				
 			}
 		}
 		newClient.Close()
-		timekit.Sleep("5s")
+		timekit.Sleep("1s")
 	}
 }
 
