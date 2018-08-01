@@ -9,7 +9,7 @@ import (
 func TestIfNewTopicIsDetected(t *testing.T) {
 	testService := NewAnalyticServices([]string{"localhost:9092"})
 	value := testService.checkIfTopicAlreadySubscribed("thisisdefinitelynotatopic")
-	if value {
+	if !value {
 		t.Error("Failed to detect new topic")
 	}
 }
