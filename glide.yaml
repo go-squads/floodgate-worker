@@ -1,6 +1,19 @@
 package: github.com/go-squads/floodgate-worker
 import:
+- package: github.com/BaritoLog/go-boilerplate
+  subpackages:
+  - timekit
 - package: github.com/Shopify/sarama
-  version: v1.17.0
 - package: github.com/bsm/sarama-cluster
-  version: v2.1.13
+- package: github.com/golang/mock
+  subpackages:
+  - gomock
+- package: github.com/influxdata/influxdb
+  subpackages:
+  - client/v2
+- package: github.com/joho/godotenv
+- package: github.com/urfave/cli
+testImport:
+- package: github.com/stretchr/testify
+  subpackages:
+  - assert
