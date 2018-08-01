@@ -140,7 +140,7 @@ func (a *analyticServices) refreshForNewTopics() {
 			}
 		}
 		newClient.Close()
-		timekit.Sleep("1s")
+		timekit.Sleep("5s")
 	}
 }
 
