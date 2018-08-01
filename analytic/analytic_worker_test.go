@@ -36,7 +36,7 @@ func TestAnalyticWorker(t *testing.T) {
 	consumer.EXPECT().MarkOffset(gomock.Any(), gomock.Any())
 	consumer.EXPECT().Close()
 
-	influxDB := models.NewInfluxService(8086, "localhost", "analyticsdb", "gopayadmin", "gopayadmin")
+	influxDB := models.NewInfluxService(8086, "localhost", "analyticsdbtest", "gopayadmin", "gopayadmin")
 	influxDB.InitDB()
 
 	worker := NewAnalyticWorker(consumer, influxDB)
@@ -75,7 +75,7 @@ func TestAnalyticWorkerZeroParam_ErrorBadkafka(t *testing.T) {
 	consumer.EXPECT().MarkOffset(gomock.Any(), gomock.Any())
 	consumer.EXPECT().Close()
 
-	influxDB := models.NewInfluxService(8086, "localhost", "analyticsdb", "gopayadmin", "gopayadmin")
+	influxDB := models.NewInfluxService(8086, "localhost", "analyticsdbtest", "gopayadmin", "gopayadmin")
 	influxDB.InitDB()
 
 	worker := NewAnalyticWorker(consumer, influxDB)
@@ -92,9 +92,9 @@ func TestAnalyticWorkerZeroParam_ErrorBadkafka(t *testing.T) {
 	assert.NotEqual(t, want, got, "they should not be equal")
 }
 
-func TestMessageConvertedToInfluxFieldRight(t * testing.T) {
+func TestMessageConvertedToInfluxFieldRight(t *testing.T) {
 	testMessage := []byte(`{"Method":"POST","Code":"200","@timestamp":"test"}`)
-	
+
 	test := &sarama.ConsumerMessage{
 		Key:            []byte{},
 		Value:          testMessage,

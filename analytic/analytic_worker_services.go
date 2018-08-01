@@ -46,7 +46,7 @@ func NewAnalyticServices(brokers []string) analyticServices {
 	brokerClient, _ := setUpClient(brokers, brokerConfig)
 	topicList, _ := brokerClient.Topics()
 
-	err := godotenv.Load()
+	err := godotenv.Load(os.ExpandEnv("$GOPATH/src/github.com/go-squads/floodgate-worker/.env"))
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
@@ -136,11 +136,11 @@ func (a *analyticServices) refreshForNewTopics() {
 					a.spawnNewAnalyserForNewTopic(topic, sarama.OffsetOldest)
 					a.topicList = append(a.topicList, topic)
 				}
-				
+
 			}
 		}
 		newClient.Close()
-		timekit.Sleep("1s")
+		timekit.Sleep("5s")
 	}
 }
 

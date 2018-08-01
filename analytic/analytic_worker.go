@@ -3,11 +3,14 @@ package analytic
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"sort"
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/joho/godotenv"
+
 	influx "github.com/go-squads/floodgate-worker/influxdb-handler"
 )
 
@@ -24,6 +27,10 @@ type analyticWorker struct {
 }
 
 func NewAnalyticWorker(consumer ClusterAnalyser, databaseCon influx.InfluxDB) *analyticWorker {
+	err := godotenv.Load(os.ExpandEnv("$GOPATH/src/github.com/go-squads/floodgate-worker/.env"))
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 	return &analyticWorker{
 		consumer:       consumer,
 		signalToStop:   make(chan int),
@@ -93,7 +100,7 @@ func (w *analyticWorker) storeMessageToDB(message *sarama.ConsumerMessage) {
 }
 
 func ConvertMessageToInfluxField(message *sarama.ConsumerMessage) (string, int) {
-	messageVal := make(map[string]string)
+	messageVal := make(map[string]interface{})
 	_ = json.Unmarshal(message.Value, &messageVal)
 
 	delete(messageVal, "@timestamp")
@@ -101,7 +108,7 @@ func ConvertMessageToInfluxField(message *sarama.ConsumerMessage) (string, int) 
 
 	var listOfValues []string
 	for _, v := range messageVal {
-		listOfValues = append(listOfValues, v)
+		listOfValues = append(listOfValues, fmt.Sprint(v))
 	}
 
 	sort.Strings(listOfValues)
