@@ -16,14 +16,18 @@ import (
 )
 
 type analyticServices struct {
+	isClosed   bool
+	brokers    []string
+	topicList  []string
+	workerList map[string]analyticWorker
+
+	database      influx.InfluxDB
 	clusterConfig cluster.Config
 	client        sarama.Client
-	brokers       []string
-	workerList    map[string]analyticWorker
-	database      influx.InfluxDB
-	topicList     []string
 	brokersConfig sarama.Config
-	isClosed      bool
+
+	newTopicEventName    string
+	TopicRefresherWorker AnalyticWorker
 }
 
 func setUpConfig() cluster.Config {
@@ -51,6 +55,7 @@ func NewAnalyticServices(brokers []string) analyticServices {
 		log.Fatal("Error loading .env file")
 	}
 
+	newTopicEventTopic := os.Getenv("NEW_TOPIC_EVENT")
 	influxPort, _ := strconv.Atoi(os.Getenv("INFLUX_PORT"))
 	influxHost := os.Getenv("INFLUX_HOST")
 	influxDbName := os.Getenv("INFLUX_DB")
@@ -61,13 +66,14 @@ func NewAnalyticServices(brokers []string) analyticServices {
 		log.Printf("Failed to connect to broker...")
 	}
 	return analyticServices{
-		clusterConfig: analyserClusterConfig,
-		client:        brokerClient,
-		brokers:       brokers,
-		workerList:    make(map[string]analyticWorker),
-		database:      influx.NewInfluxService(influxPort, influxHost, influxDbName, influxUsername, influxPassword),
-		topicList:     topicList,
-		brokersConfig: *brokerConfig,
+		clusterConfig:     analyserClusterConfig,
+		client:            brokerClient,
+		brokers:           brokers,
+		workerList:        make(map[string]analyticWorker),
+		database:          influx.NewInfluxService(influxPort, influxHost, influxDbName, influxUsername, influxPassword),
+		topicList:         topicList,
+		brokersConfig:     *brokerConfig,
+		newTopicEventName: newTopicEventTopic,
 	}
 }
 
@@ -120,6 +126,17 @@ func (a *analyticServices) Start() {
 
 	a.refreshForNewTopics()
 	return
+}
+
+func (a *analyticServices) OnNewTopicEvent(message *sarama.ConsumerMessage) {
+	topicToCheck := fmt.Sprint(message.Value)
+
+	_, exist := a.workerList[topicToCheck]
+	if exist {
+		return
+	}
+
+	a.spawnNewAnalyserForNewTopic(topicToCheck, sarama.OffsetOldest)
 }
 
 func (a *analyticServices) refreshForNewTopics() {
