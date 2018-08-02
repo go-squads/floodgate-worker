@@ -72,7 +72,7 @@ func (w *analyticWorker) Stop() {
 
 func (w *analyticWorker) consumeMessage() {
 	for {
-		fmt.Println("Looking for logs:..")
+		fmt.Println("Looking for logs")
 		select {
 		case message, ok := <-w.consumer.Messages():
 			if ok {
@@ -80,6 +80,7 @@ func (w *analyticWorker) consumeMessage() {
 				w.consumer.MarkOffset(message, "")
 			}
 		case <-w.signalToStop:
+			fmt.Println("Stopped")
 			return
 		}
 	}

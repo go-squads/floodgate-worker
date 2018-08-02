@@ -128,9 +128,32 @@ func (a *analyticServices) Start() {
 			worker.Start()
 		}
 	}
+	// a.refreshForNewTopics()
 
 	return
 }
+
+// func (a *analyticServices) refreshForNewTopics() {
+// 	for !a.isClosed {
+// 		newClient, err := setUpClient(a.brokers, &a.brokersConfig)
+// 		if err != nil {
+// 			fmt.Println("Error" + err.Error())
+// 		}
+// 		clientTopics, _ := newClient.Topics()
+// 		if len(a.topicList) != len(clientTopics) {
+// 			for _, topic := range clientTopics {
+// 				exist := a.checkIfTopicAlreadySubscribed(topic)
+// 				if !exist {
+// 					a.spawnNewAnalyserForNewTopic(topic, sarama.OffsetOldest)
+// 					a.topicList = append(a.topicList, topic)
+// 				}
+
+// 			}
+// 		}
+// 		newClient.Close()
+// 		timekit.Sleep("5s")
+// 	}
+// }
 
 func (a *analyticServices) spawnTopicRefresher() error {
 	a.clusterConfig.Config.Consumer.Offsets.Initial = sarama.OffsetNewest

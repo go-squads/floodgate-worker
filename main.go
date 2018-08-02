@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 
 	"github.com/go-squads/floodgate-worker/analytic"
 	"github.com/urfave/cli"
 )
+
+var stopSig = make(chan os.Signal)
 
 func main() {
 
@@ -25,19 +28,34 @@ func main() {
 		},
 	}
 
+	signal.Notify(stopSig, os.Interrupt)
+
+	go func() {
+		select {
+		case sig := <-stopSig:
+			fmt.Printf("Got %s signal. Aborting...\n", sig)
+			os.Exit(1)
+		}
+	}()
+
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(fmt.Sprintf("Some error occurred: %s", err.Error()))
 	}
 }
 
-func ActionAnalyserService(cli *cli.Context) (err error) {
+func ActionAnalyserService(cli *cli.Context) {
 	brokers := []string{
 		"localhost:9092",
 	}
 
 	analyticService := analytic.NewAnalyticServices(brokers)
 	analyticService.Start()
-	// timekit.Sleep("100s")
-	return
+	for {
+		select {
+		case <-stopSig:
+			analyticService.Close()
+			return
+		}
+	}
 }
