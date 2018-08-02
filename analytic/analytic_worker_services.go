@@ -47,34 +47,38 @@ func setUpClient(brokers []string, config *sarama.Config) (sarama.Client, error)
 func NewAnalyticServices(brokers []string) analyticServices {
 	brokerConfig := sarama.NewConfig()
 	analyserClusterConfig := setUpConfig()
-	brokerClient, _ := setUpClient(brokers, brokerConfig)
+	brokerClient, err := setUpClient(brokers, brokerConfig)
+	if err != nil {
+		log.Fatal("Failed to connect to broker...")
+	}
 	topicList, _ := brokerClient.Topics()
 
-	err := godotenv.Load(os.ExpandEnv("$GOPATH/src/github.com/go-squads/floodgate-worker/.env"))
+	err = godotenv.Load(os.ExpandEnv("$GOPATH/src/github.com/go-squads/floodgate-worker/.env"))
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
 	newTopicEventTopic := os.Getenv("NEW_TOPIC_EVENT")
-	influxPort, _ := strconv.Atoi(os.Getenv("INFLUX_PORT"))
-	influxHost := os.Getenv("INFLUX_HOST")
-	influxDbName := os.Getenv("INFLUX_DB")
-	influxUsername := os.Getenv("INFLUX_USERNAME")
-	influxPassword := os.Getenv("INFLUX_PASSWORD")
 
-	if err != nil {
-		log.Printf("Failed to connect to broker...")
-	}
 	return analyticServices{
 		clusterConfig:     analyserClusterConfig,
 		client:            brokerClient,
 		brokers:           brokers,
 		workerList:        make(map[string]analyticWorker),
-		database:          influx.NewInfluxService(influxPort, influxHost, influxDbName, influxUsername, influxPassword),
+		database:          connectToInflux(),
 		topicList:         topicList,
 		brokersConfig:     *brokerConfig,
 		newTopicEventName: newTopicEventTopic,
 	}
+}
+
+func connectToInflux() influx.InfluxDB {
+	influxPort, _ := strconv.Atoi(os.Getenv("INFLUX_PORT"))
+	influxHost := os.Getenv("INFLUX_HOST")
+	influxDbName := os.Getenv("INFLUX_DB")
+	influxUsername := os.Getenv("INFLUX_USERNAME")
+	influxPassword := os.Getenv("INFLUX_PASSWORD")
+	return influx.NewInfluxService(influxPort, influxHost, influxDbName, influxUsername, influxPassword)
 }
 
 func (a *analyticServices) spawnNewAnalyser(topic string, initialOffset int64) error {
