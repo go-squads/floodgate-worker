@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/BaritoLog/go-boilerplate/timekit"
 	"github.com/Shopify/sarama"
 	cluster "github.com/bsm/sarama-cluster"
 	influx "github.com/go-squads/floodgate-worker/influxdb-handler"
@@ -116,6 +115,11 @@ func (a *analyticServices) Start() {
 	if err != nil {
 		log.Printf("Failed to init InfluxDB")
 	}
+	err = a.spawnTopicRefresher()
+	if err != nil {
+		log.Printf("Failure in creating topic refresher")
+	}
+
 	topicList, _ := a.client.Topics()
 	for _, topic := range topicList {
 		if !a.checkIfTopicAlreadySubscribed(topic) {
@@ -125,12 +129,26 @@ func (a *analyticServices) Start() {
 		}
 	}
 
-	a.refreshForNewTopics()
 	return
 }
 
+func (a *analyticServices) spawnTopicRefresher() error {
+	a.clusterConfig.Config.Consumer.Offsets.Initial = sarama.OffsetNewest
+	refresherCluster, err := cluster.NewConsumer(a.brokers, os.Getenv("TOPIC_REFRESHER_GROUP_ID"),
+		[]string{os.Getenv("NEW_TOPIC_EVENT")}, &a.clusterConfig)
+
+	if err != nil {
+		log.Fatalf("Failed to create a topic refresher")
+	}
+
+	topicRefresher := NewAnalyticWorker(refresherCluster, a.database)
+	fmt.Println("Spawned a topic refresher")
+	topicRefresher.Start(a.OnNewTopicEvent)
+	return err
+}
+
 func (a *analyticServices) OnNewTopicEvent(message *sarama.ConsumerMessage) {
-	topicToCheck := fmt.Sprint(message.Value)
+	topicToCheck := string(message.Value)
 
 	_, exist := a.workerList[topicToCheck]
 	if exist {
@@ -139,28 +157,6 @@ func (a *analyticServices) OnNewTopicEvent(message *sarama.ConsumerMessage) {
 
 	a.spawnNewAnalyserForNewTopic(topicToCheck, sarama.OffsetOldest)
 	a.lastNewTopic = topicToCheck
-}
-
-func (a *analyticServices) refreshForNewTopics() {
-	for !a.isClosed {
-		newClient, err := setUpClient(a.brokers, &a.brokersConfig)
-		if err != nil {
-			fmt.Println("Error" + err.Error())
-		}
-		clientTopics, _ := newClient.Topics()
-		if len(a.topicList) != len(clientTopics) {
-			for _, topic := range clientTopics {
-				exist := a.checkIfTopicAlreadySubscribed(topic)
-				if !exist {
-					a.spawnNewAnalyserForNewTopic(topic, sarama.OffsetOldest)
-					a.topicList = append(a.topicList, topic)
-				}
-
-			}
-		}
-		newClient.Close()
-		timekit.Sleep("5s")
-	}
 }
 
 func (a *analyticServices) Close() {
