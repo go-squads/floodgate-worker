@@ -105,7 +105,7 @@ func (a *analyticServices) spawnNewAnalyser(topic string, initialOffset int64) e
 	// Mock this part
 	analyserCluster, err := a.NewClusterConsumer(os.Getenv("CONSUMER_GROUP_ID"), topic)
 	if err != nil {
-		log.Fatalf("Cluster consumer analyser creation failure")
+		log.Printf("Cluster consumer analyser creation failure")
 	}
 	worker := NewAnalyticWorker(analyserCluster, a.database)
 	a.workerList[topic] = worker

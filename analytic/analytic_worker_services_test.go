@@ -38,8 +38,20 @@ func TestIfTopicWithoutProperSuffixIgnored(t *testing.T) {
 }
 
 func TestIfOldTopicIsDetected(t *testing.T) {
-	// testService := NewAnalyticServices([]string{"localhost:9092"})
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
+	mockClient := mock.NewMockAnalyserServices(ctrl)
+	mockClient.EXPECT().SetUpClient(gomock.Any()).AnyTimes().Return(nil, nil)
+	mockClient.EXPECT().NewClusterConsumer(gomock.Any(), "test_logs").AnyTimes().Return(nil, nil)
+
+	var v interface{} = NewAnalyticServices([]string{"localhost:9092"})
+	testService := v.(*analyticServices)
+	testService.spawnNewAnalyser("test_logs", 0)
+	value := testService.checkIfTopicAlreadySubscribed("test_logs")
+	if !value {
+		t.Error("Failed to detect it's an old topic")
+	}
 }
 
 func TestIfNewWorkerIsProperlyMapped(t *testing.T) {
