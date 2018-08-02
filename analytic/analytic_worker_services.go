@@ -14,6 +14,13 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type AnalyserServices interface {
+	Start()
+	Close()
+	SetUpConfig() cluster.Config
+	SetUpClient(config *sarama.Config) (sarama.Client, error)
+}
+
 type analyticServices struct {
 	isClosed   bool
 	brokers    []string
@@ -30,7 +37,7 @@ type analyticServices struct {
 	TopicRefresherWorker AnalyticWorker
 }
 
-func setUpConfig() cluster.Config {
+func (a *analyticServices) SetUpConfig() cluster.Config {
 	config := sarama.NewConfig()
 	config.Version = sarama.V0_10_2_0
 
@@ -39,35 +46,38 @@ func setUpConfig() cluster.Config {
 	return *clusterConfig
 }
 
-func setUpClient(brokers []string, config *sarama.Config) (sarama.Client, error) {
-	client, err := sarama.NewClient(brokers, config)
+func (a *analyticServices) SetUpClient(config *sarama.Config) (sarama.Client, error) {
+	client, err := sarama.NewClient(a.brokers, config)
 	return client, err
 }
 
-func NewAnalyticServices(brokers []string) analyticServices {
+func (a *analyticServices) SetBrokerAndTopics() error {
 	brokerConfig := sarama.NewConfig()
-	analyserClusterConfig := setUpConfig()
-	brokerClient, err := setUpClient(brokers, brokerConfig)
+	analyserClusterConfig := a.SetUpConfig()
+	brokerClient, err := a.SetUpClient(brokerConfig)
 	if err != nil {
-		log.Fatal("Failed to connect to broker...")
+		log.Print("Failed to connect to broker...")
 	}
 	topicList, _ := brokerClient.Topics()
+	a.clusterConfig = analyserClusterConfig
+	a.topicList = topicList
+	a.client = brokerClient
+	a.brokersConfig = *brokerConfig
+	return err
+}
 
-	err = godotenv.Load(os.ExpandEnv("$GOPATH/src/github.com/go-squads/floodgate-worker/.env"))
+func NewAnalyticServices(brokers []string) AnalyserServices {
+	err := godotenv.Load(os.ExpandEnv("$GOPATH/src/github.com/go-squads/floodgate-worker/.env"))
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
 	newTopicEventTopic := os.Getenv("NEW_TOPIC_EVENT")
 
-	return analyticServices{
-		clusterConfig:     analyserClusterConfig,
-		client:            brokerClient,
+	return &analyticServices{
 		brokers:           brokers,
 		workerList:        make(map[string]analyticWorker),
 		database:          connectToInflux(),
-		topicList:         topicList,
-		brokersConfig:     *brokerConfig,
 		newTopicEventName: newTopicEventTopic,
 	}
 }
@@ -114,8 +124,12 @@ func (a *analyticServices) spawnNewAnalyserForNewTopic(topic string, messageOffs
 }
 
 func (a *analyticServices) Start() {
+	err := a.SetBrokerAndTopics()
+	if err != nil {
+		log.Fatalf("Broker and client setup fail")
+	}
 	a.isClosed = false
-	err := a.database.InitDB()
+	err = a.database.InitDB()
 	if err != nil {
 		log.Printf("Failed to init InfluxDB")
 	}
