@@ -15,6 +15,8 @@ import (
 )
 
 type AnalyticWorker interface {
+	Start(f ...func(*sarama.ConsumerMessage))
+	Stop()
 	OnSuccess(f func(*sarama.ConsumerMessage))
 }
 

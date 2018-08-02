@@ -13,8 +13,8 @@ func TestIfNewTopicIsDetected(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockClient := mock.NewMockBrokerServices(ctrl)
-	mockClient.EXPECT().SetUpClient(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, fmt.Errorf(""))
+	mockClient := mock.NewMockAnalyserServices(ctrl)
+	mockClient.EXPECT().SetUpClient(gomock.Any()).AnyTimes().Return(nil, fmt.Errorf(""))
 	var v interface{} = NewAnalyticServices([]string{"localhost:9092"})
 	testService := v.(*analyticServices)
 	value := testService.checkIfTopicAlreadySubscribed("thisisdefinitelynotatopic_logs")
@@ -27,8 +27,8 @@ func TestIfTopicWithoutProperSuffixIgnored(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	mockClient := mock.NewMockBrokerServices(ctrl)
-	mockClient.EXPECT().SetUpClient(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, fmt.Errorf(""))
+	mockClient := mock.NewMockAnalyserServices(ctrl)
+	mockClient.EXPECT().SetUpClient(gomock.Any()).AnyTimes().Return(nil, fmt.Errorf(""))
 	var v interface{} = NewAnalyticServices([]string{"localhost:9092"})
 	testService := v.(*analyticServices)
 	value := testService.checkIfTopicAlreadySubscribed("thisisdefinitelynotatopic")

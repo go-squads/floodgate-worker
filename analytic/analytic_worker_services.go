@@ -15,11 +15,10 @@ import (
 )
 
 type AnalyserServices interface {
-	Start()
+	Start() error
 	Close()
 	SetUpConfig() cluster.Config
 	SetUpClient(config *sarama.Config) (sarama.Client, error)
-	WorkerList() map[string]analyticWorker
 	NewClusterConsumer(groupID string, topic string) (*cluster.Consumer, error)
 }
 
@@ -27,7 +26,7 @@ type analyticServices struct {
 	isClosed   bool
 	brokers    []string
 	topicList  []string
-	workerList map[string]analyticWorker
+	workerList map[string]AnalyticWorker
 
 	database      influx.InfluxDB
 	clusterConfig cluster.Config
@@ -86,7 +85,7 @@ func NewAnalyticServices(brokers []string) AnalyserServices {
 
 	return &analyticServices{
 		brokers:           brokers,
-		workerList:        make(map[string]analyticWorker),
+		workerList:        make(map[string]AnalyticWorker),
 		database:          connectToInflux(),
 		newTopicEventName: newTopicEventTopic,
 	}
@@ -109,7 +108,7 @@ func (a *analyticServices) spawnNewAnalyser(topic string, initialOffset int64) e
 		log.Fatalf("Cluster consumer analyser creation failure")
 	}
 	worker := NewAnalyticWorker(analyserCluster, a.database)
-	a.workerList[topic] = *worker
+	a.workerList[topic] = worker
 	fmt.Println("Spawned worker for " + topic)
 	return err
 }
@@ -134,7 +133,7 @@ func (a *analyticServices) spawnNewAnalyserForNewTopic(topic string, messageOffs
 	return
 }
 
-func (a *analyticServices) Start() {
+func (a *analyticServices) Start() error {
 	err := a.SetBrokerAndTopics()
 	if err != nil {
 		log.Fatalf("Broker and client setup fail")
@@ -158,7 +157,7 @@ func (a *analyticServices) Start() {
 		}
 	}
 
-	return
+	return err
 }
 
 func (a *analyticServices) spawnTopicRefresher() error {
@@ -203,6 +202,6 @@ func (a *analyticServices) checkIfClosed() bool {
 	return a.isClosed
 }
 
-func (a *analyticServices) WorkerList() map[string]analyticWorker {
+func (a *analyticServices) showWorkerList() map[string]AnalyticWorker {
 	return a.workerList
 }
