@@ -20,7 +20,7 @@ type AnalyserServices interface {
 	SetUpConfig() cluster.Config
 	SetUpClient(config *sarama.Config) (sarama.Client, error)
 	WorkerList() map[string]analyticWorker
-	NewClusterConsumer(topic string) (*cluster.Consumer, error)
+	NewClusterConsumer(groupID string, topic string) (*cluster.Consumer, error)
 }
 
 type analyticServices struct {
@@ -53,8 +53,8 @@ func (a *analyticServices) SetUpClient(config *sarama.Config) (sarama.Client, er
 	return client, err
 }
 
-func (a *analyticServices) NewClusterConsumer(topic string) (*cluster.Consumer, error) {
-	analyserCluster, err := cluster.NewConsumer(a.brokers, os.Getenv("CONSUMER_GROUP_ID"), []string{topic}, &a.clusterConfig)
+func (a *analyticServices) NewClusterConsumer(groupID string, topic string) (*cluster.Consumer, error) {
+	analyserCluster, err := cluster.NewConsumer(a.brokers, groupID, []string{topic}, &a.clusterConfig)
 	if err != nil {
 		log.Printf("Failed to create a cluster of analyser")
 	}
@@ -104,7 +104,7 @@ func connectToInflux() influx.InfluxDB {
 func (a *analyticServices) spawnNewAnalyser(topic string, initialOffset int64) error {
 	a.clusterConfig.Config.Consumer.Offsets.Initial = initialOffset
 	// Mock this part
-	analyserCluster, err := a.NewClusterConsumer(topic)
+	analyserCluster, err := a.NewClusterConsumer(os.Getenv("CONSUMER_GROUP_ID"), topic)
 	if err != nil {
 		log.Fatalf("Cluster consumer analyser creation failure")
 	}
@@ -163,9 +163,7 @@ func (a *analyticServices) Start() {
 
 func (a *analyticServices) spawnTopicRefresher() error {
 	a.clusterConfig.Config.Consumer.Offsets.Initial = sarama.OffsetNewest
-	refresherCluster, err := cluster.NewConsumer(a.brokers, os.Getenv("TOPIC_REFRESHER_GROUP_ID"),
-		[]string{os.Getenv("NEW_TOPIC_EVENT")}, &a.clusterConfig)
-
+	refresherCluster, err := a.NewClusterConsumer(os.Getenv("TOPIC_REFRESHER_GROUP_ID"), os.Getenv("NEW_TOPIC_EVENT"))
 	if err != nil {
 		log.Fatalf("Failed to create a topic refresher")
 	}
