@@ -30,14 +30,6 @@ func main() {
 
 	signal.Notify(stopSig, os.Interrupt)
 
-	go func() {
-		select {
-		case sig := <-stopSig:
-			fmt.Printf("Got %s signal. Aborting...\n", sig)
-			os.Exit(1)
-		}
-	}()
-
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(fmt.Sprintf("Some error occurred: %s", err.Error()))
@@ -54,8 +46,9 @@ func ActionAnalyserService(cli *cli.Context) {
 	for {
 		select {
 		case <-stopSig:
+			fmt.Println("Gracefully shutting down..")
 			analyticService.Close()
-			return
+			os.Exit(1)
 		}
 	}
 }

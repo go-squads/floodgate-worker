@@ -72,7 +72,6 @@ func (w *analyticWorker) Stop() {
 
 func (w *analyticWorker) consumeMessage() {
 	for {
-		fmt.Println("Looking for logs")
 		select {
 		case message, ok := <-w.consumer.Messages():
 			if ok {
