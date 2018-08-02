@@ -27,6 +27,7 @@ type analyticServices struct {
 	brokersConfig sarama.Config
 
 	newTopicEventName    string
+	lastNewTopic         string
 	TopicRefresherWorker AnalyticWorker
 }
 
@@ -137,6 +138,7 @@ func (a *analyticServices) OnNewTopicEvent(message *sarama.ConsumerMessage) {
 	}
 
 	a.spawnNewAnalyserForNewTopic(topicToCheck, sarama.OffsetOldest)
+	a.lastNewTopic = topicToCheck
 }
 
 func (a *analyticServices) refreshForNewTopics() {
