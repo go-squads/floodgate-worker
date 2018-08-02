@@ -19,6 +19,8 @@ type AnalyserServices interface {
 	Close()
 	SetUpConfig() cluster.Config
 	SetUpClient(config *sarama.Config) (sarama.Client, error)
+	WorkerList() map[string]analyticWorker
+	NewClusterConsumer(topic string) (*cluster.Consumer, error)
 }
 
 type analyticServices struct {
@@ -49,6 +51,14 @@ func (a *analyticServices) SetUpConfig() cluster.Config {
 func (a *analyticServices) SetUpClient(config *sarama.Config) (sarama.Client, error) {
 	client, err := sarama.NewClient(a.brokers, config)
 	return client, err
+}
+
+func (a *analyticServices) NewClusterConsumer(topic string) (*cluster.Consumer, error) {
+	analyserCluster, err := cluster.NewConsumer(a.brokers, os.Getenv("CONSUMER_GROUP_ID"), []string{topic}, &a.clusterConfig)
+	if err != nil {
+		log.Printf("Failed to create a cluster of analyser")
+	}
+	return analyserCluster, err
 }
 
 func (a *analyticServices) SetBrokerAndTopics() error {
@@ -93,9 +103,10 @@ func connectToInflux() influx.InfluxDB {
 
 func (a *analyticServices) spawnNewAnalyser(topic string, initialOffset int64) error {
 	a.clusterConfig.Config.Consumer.Offsets.Initial = initialOffset
-	analyserCluster, err := cluster.NewConsumer(a.brokers, os.Getenv("CONSUMER_GROUP_ID"), []string{topic}, &a.clusterConfig)
+	// Mock this part
+	analyserCluster, err := a.NewClusterConsumer(topic)
 	if err != nil {
-		log.Fatalf("Failed to create a cluster of analyser")
+		log.Fatalf("Cluster consumer analyser creation failure")
 	}
 	worker := NewAnalyticWorker(analyserCluster, a.database)
 	a.workerList[topic] = *worker
@@ -192,4 +203,8 @@ func (a *analyticServices) Close() {
 
 func (a *analyticServices) checkIfClosed() bool {
 	return a.isClosed
+}
+
+func (a *analyticServices) WorkerList() map[string]analyticWorker {
+	return a.workerList
 }

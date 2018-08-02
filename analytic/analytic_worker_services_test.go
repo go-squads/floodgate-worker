@@ -1,6 +1,7 @@
 package analytic
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/Shopify/sarama"
@@ -13,12 +14,26 @@ func TestIfNewTopicIsDetected(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockClient := mock.NewMockBrokerServices(ctrl)
-	mockClient.EXPECT().SetUpConfig().AnyTimes().Return(gomock.Any())
-	mockClient.EXPECT().SetUpClient(gomock.Any(), gomock.Any()).AnyTimes().Return(gomock.Any())
-	testService := NewAnalyticServices([]string{"localhost:9092"})
+	mockClient.EXPECT().SetUpClient(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, fmt.Errorf(""))
+	var v interface{} = NewAnalyticServices([]string{"localhost:9092"})
+	testService := v.(*analyticServices)
+	value := testService.checkIfTopicAlreadySubscribed("thisisdefinitelynotatopic_logs")
+	if value {
+		t.Error("Failed to detect new topic")
+	}
+}
+
+func TestIfTopicWithoutProperSuffixIgnored(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockClient := mock.NewMockBrokerServices(ctrl)
+	mockClient.EXPECT().SetUpClient(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, fmt.Errorf(""))
+	var v interface{} = NewAnalyticServices([]string{"localhost:9092"})
+	testService := v.(*analyticServices)
 	value := testService.checkIfTopicAlreadySubscribed("thisisdefinitelynotatopic")
 	if !value {
-		t.Error("Failed to detect new topic")
+		t.Error("Failed to detect it doesn't ignore topics with wrong suffix")
 	}
 }
 
@@ -28,7 +43,8 @@ func TestIfOldTopicIsDetected(t *testing.T) {
 }
 
 func TestIfNewWorkerIsProperlyMapped(t *testing.T) {
-	testService := NewAnalyticServices([]string{"localhost:9092"})
+	var v interface{} = NewAnalyticServices([]string{"localhost:9092"})
+	testService := v.(*analyticServices)
 	testService.spawnNewAnalyser("test", sarama.OffsetNewest)
 	_, exist := testService.workerList["test"]
 	if !exist {
