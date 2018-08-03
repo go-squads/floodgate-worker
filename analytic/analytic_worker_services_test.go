@@ -63,17 +63,3 @@ func TestIfNewWorkerIsProperlyMapped(t *testing.T) {
 		t.Error("Worker not properly mapped")
 	}
 }
-
-// Add tests for Close()
-// func TestIfMessageValueIsMapped(t * testing.T) {
-// 	testMessage := &sarama.ConsumerMessage{
-// 		Key:            nil,
-// 		Value:          {"Method:" ,
-// 		Topic:          "analytic-test",
-// 		Partition:      0,
-// 		Offset:         0,
-// 		Timestamp:      time.Now(),
-// 		BlockTimestamp: time.Now(),
-// 		Headers:        nil,
-// 	}
-// }

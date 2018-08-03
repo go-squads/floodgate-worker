@@ -136,16 +136,16 @@ func (a *analyticServices) spawnNewAnalyserForNewTopic(topic string, messageOffs
 func (a *analyticServices) Start() error {
 	err := a.SetBrokerAndTopics()
 	if err != nil {
-		log.Fatalf("Broker and client setup fail")
+		return err
 	}
 	a.isClosed = false
 	err = a.database.InitDB()
 	if err != nil {
-		log.Printf("Failed to init InfluxDB")
+		return err
 	}
 	err = a.spawnTopicRefresher()
 	if err != nil {
-		log.Printf("Failure in creating topic refresher")
+		return err
 	}
 
 	topicList, _ := a.client.Topics()
@@ -164,7 +164,7 @@ func (a *analyticServices) spawnTopicRefresher() error {
 	a.clusterConfig.Config.Consumer.Offsets.Initial = sarama.OffsetNewest
 	refresherCluster, err := a.NewClusterConsumer(os.Getenv("TOPIC_REFRESHER_GROUP_ID"), os.Getenv("NEW_TOPIC_EVENT"))
 	if err != nil {
-		log.Fatalf("Failed to create a topic refresher")
+		log.Printf("Failed to create a topic refresher")
 	}
 
 	topicRefresher := NewAnalyticWorker(refresherCluster, a.database)
