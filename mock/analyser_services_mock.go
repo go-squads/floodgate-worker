@@ -5,11 +5,10 @@
 package mock
 
 import (
-	reflect "reflect"
-
 	sarama "github.com/Shopify/sarama"
 	sarama_cluster "github.com/bsm/sarama-cluster"
 	gomock "github.com/golang/mock/gomock"
+	reflect "reflect"
 )
 
 // MockAnalyserServices is a mock of AnalyserServices interface
