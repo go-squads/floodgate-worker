@@ -123,21 +123,10 @@ func (a *analyticServices) checkIfTopicAlreadySubscribed(topic string) bool {
 	return true
 }
 
-// Mock
 func (a *analyticServices) spawnNewAnalyserForNewTopic() error {
 	err := a.spawnNewAnalyser(a.newTopicToCreate, sarama.OffsetOldest)
 	return err
 }
-
-// func (a *analyticServices) spawnNewAnalyserForNewTopic(topic string, messageOffset int64) {
-// 	err := a.spawnNewAnalyser(topic, sarama.OffsetOldest)
-// 	if err != nil {
-// 		log.Printf("Failed to create new worker for new topic")
-// 	}
-// 	newWorker := a.workerList[topic]
-// 	newWorker.Start()
-// 	return
-// }
 
 func (a *analyticServices) Start() error {
 	err := a.SetBrokerAndTopics()

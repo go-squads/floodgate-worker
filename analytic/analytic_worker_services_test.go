@@ -96,3 +96,47 @@ func TestCheckForNewTopicEvent(t *testing.T) {
 		t.Error("Error in detecting creating new topic event")
 	}
 }
+
+func TestOnNewTopicEventDoNotRemakeOldTopic(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockClient := mock.NewMockAnalyserServices(ctrl)
+	mockClient.EXPECT().NewClusterConsumer(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+
+	test := &sarama.ConsumerMessage{
+		Key:            []byte{},
+		Value:          []byte("analytic-test_logs"),
+		Topic:          "new_topic_events",
+		Partition:      0,
+		Offset:         0,
+		Timestamp:      time.Now(),
+		BlockTimestamp: time.Now(),
+		Headers:        nil,
+	}
+
+	secTest := &sarama.ConsumerMessage{
+		Key:            []byte{},
+		Value:          []byte("thisisa-test_logs"),
+		Topic:          "new_topic_events",
+		Partition:      0,
+		Offset:         0,
+		Timestamp:      time.Now(),
+		BlockTimestamp: time.Now(),
+		Headers:        nil,
+	}
+
+	var v interface{} = NewAnalyticServices([]string{"localhost:9092"})
+	testService := v.(*analyticServices)
+	testService.clusterConfig = testService.SetUpConfig()
+	testService.topicList = []string{"wow-test_logs"}
+	testService.client = nil
+	brokerConfig := sarama.NewConfig()
+	testService.brokersConfig = *brokerConfig
+	testService.OnNewTopicEvent(test)
+	testService.OnNewTopicEvent(secTest)
+	testService.OnNewTopicEvent(test)
+	if testService.newTopicToCreate != "thisisa-test_logs" {
+		t.Error("Old topics triggered the new topic event")
+	}
+}
