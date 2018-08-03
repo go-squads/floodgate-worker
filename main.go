@@ -42,7 +42,11 @@ func ActionAnalyserService(cli *cli.Context) {
 	}
 
 	analyticService := analytic.NewAnalyticServices(brokers)
-	analyticService.Start()
+	err := analyticService.Start()
+	if err != nil {
+		log.Fatal("Failed to start")
+	}
+
 	for {
 		select {
 		case <-stopSig:

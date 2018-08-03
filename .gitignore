@@ -6,6 +6,7 @@
 .vs/slnx.sqlite
 
 *.test
+*.html
 
 *.out
 vendor/
