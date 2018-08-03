@@ -3,6 +3,7 @@ package dbhandler
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/url"
 	"time"
 
@@ -25,7 +26,7 @@ type influxDb struct {
 }
 
 func NewInfluxService(port int, host, dbname, username, password string) InfluxDB {
-	return &influxDb {
+	return &influxDb{
 		Host:         host,
 		Port:         port,
 		DatabaseName: dbname,
@@ -38,7 +39,7 @@ func (influxDb *influxDb) InitDB() error {
 	fmt.Println("Trying to connect to " + influxDb.DatabaseName + " database")
 	addr, err := url.Parse(fmt.Sprintf("http://%s:%d", influxDb.Host, influxDb.Port))
 	if err != nil {
-		println("InfluxDB : Invalid Url,Please check domain name given\nError Details: ", err.Error())
+		log.Print("InfluxDB : Invalid Url,Please check domain name given\nError Details: ", err.Error())
 		return err
 	}
 

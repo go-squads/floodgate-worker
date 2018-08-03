@@ -26,6 +26,7 @@ type analyticWorker struct {
 	onSuccessFunc  func(*sarama.ConsumerMessage)
 	refreshTopics  func()
 	databaseClient influx.InfluxDB
+	isRunning      bool
 }
 
 func NewAnalyticWorker(consumer ClusterAnalyser, databaseCon influx.InfluxDB) *analyticWorker {
@@ -59,6 +60,7 @@ func (w *analyticWorker) Start(f ...func(*sarama.ConsumerMessage)) {
 		w.OnSuccess(w.storeMessageToDB)
 	}
 
+	w.isRunning = true
 	go w.consumeMessage()
 }
 
@@ -81,6 +83,7 @@ func (w *analyticWorker) consumeMessage() {
 				w.consumer.MarkOffset(message, "")
 			}
 		case <-w.signalToStop:
+			w.isRunning = false
 			fmt.Println("Stopped")
 			return
 		}
@@ -125,4 +128,8 @@ func ConvertMessageToInfluxField(message *sarama.ConsumerMessage) (string, int) 
 		return "", 0
 	}
 
+}
+
+func (w *analyticWorker) checkIfRunning() bool {
+	return w.isRunning
 }
