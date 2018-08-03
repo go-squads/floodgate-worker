@@ -34,7 +34,7 @@ type analyticServices struct {
 	brokersConfig sarama.Config
 
 	newTopicEventName    string
-	lastNewTopic         string
+	newTopicToCreate     string
 	TopicRefresherWorker AnalyticWorker
 }
 
@@ -123,15 +123,21 @@ func (a *analyticServices) checkIfTopicAlreadySubscribed(topic string) bool {
 	return true
 }
 
-func (a *analyticServices) spawnNewAnalyserForNewTopic(topic string, messageOffset int64) {
-	err := a.spawnNewAnalyser(topic, sarama.OffsetOldest)
-	if err != nil {
-		log.Printf("Failed to create new worker for new topic")
-	}
-	newWorker := a.workerList[topic]
-	newWorker.Start()
-	return
+// Mock
+func (a *analyticServices) spawnNewAnalyserForNewTopic() error {
+	err := a.spawnNewAnalyser(a.newTopicToCreate, sarama.OffsetOldest)
+	return err
 }
+
+// func (a *analyticServices) spawnNewAnalyserForNewTopic(topic string, messageOffset int64) {
+// 	err := a.spawnNewAnalyser(topic, sarama.OffsetOldest)
+// 	if err != nil {
+// 		log.Printf("Failed to create new worker for new topic")
+// 	}
+// 	newWorker := a.workerList[topic]
+// 	newWorker.Start()
+// 	return
+// }
 
 func (a *analyticServices) Start() error {
 	err := a.SetBrokerAndTopics()
@@ -181,8 +187,13 @@ func (a *analyticServices) OnNewTopicEvent(message *sarama.ConsumerMessage) {
 		return
 	}
 
-	a.spawnNewAnalyserForNewTopic(topicToCheck, sarama.OffsetOldest)
-	a.lastNewTopic = topicToCheck
+	a.newTopicToCreate = topicToCheck
+	err := a.spawnNewAnalyserForNewTopic()
+	if err != nil {
+		log.Print("Failed to spawn new topic")
+	}
+	worker := a.workerList[a.newTopicToCreate]
+	worker.Start()
 }
 
 func (a *analyticServices) Close() {

@@ -2,7 +2,9 @@ package analytic
 
 import (
 	"fmt"
+	"log"
 	"testing"
+	"time"
 
 	"github.com/Shopify/sarama"
 	mock "github.com/go-squads/floodgate-worker/mock"
@@ -61,5 +63,36 @@ func TestIfNewWorkerIsProperlyMapped(t *testing.T) {
 	_, exist := testService.workerList["test"]
 	if !exist {
 		t.Error("Worker not properly mapped")
+	}
+}
+
+func TestCheckForNewTopicEvent(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockClient := mock.NewMockAnalyserServices(ctrl)
+	mockClient.EXPECT().NewClusterConsumer(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+
+	test := &sarama.ConsumerMessage{
+		Key:            []byte{},
+		Value:          []byte("analytic-test_logs"),
+		Topic:          "new_topic_events",
+		Partition:      0,
+		Offset:         0,
+		Timestamp:      time.Now(),
+		BlockTimestamp: time.Now(),
+		Headers:        nil,
+	}
+	var v interface{} = NewAnalyticServices([]string{"localhost:9092"})
+	testService := v.(*analyticServices)
+	testService.clusterConfig = testService.SetUpConfig()
+	testService.topicList = []string{"wow-test_logs"}
+	testService.client = nil
+	brokerConfig := sarama.NewConfig()
+	testService.brokersConfig = *brokerConfig
+	testService.OnNewTopicEvent(test)
+	log.Print(testService.newTopicToCreate)
+	if testService.newTopicToCreate != "analytic-test_logs" {
+		t.Error("Error in detecting creating new topic event")
 	}
 }
