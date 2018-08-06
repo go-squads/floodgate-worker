@@ -149,3 +149,13 @@ func TestExtractCorrectLogLabel(t *testing.T) {
 		t.Error("Failed to extract correct log label")
 	}
 }
+
+func TestIfInvalidLogLabel(t *testing.T) {
+	worker := NewAnalyticWorker(nil, nil, configLogLevelMapping())
+	var testMap = make(map[string]interface{})
+	testMap["ERROR"] = "ERROR"
+	result, exist := worker.getLogLabel(testMap)
+	if exist || result == "LOG_LEVEL" {
+		t.Error("Failed to detect it's an invalid log level")
+	}
+}
