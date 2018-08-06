@@ -34,28 +34,6 @@ func (m *MockAnalyserServices) EXPECT() *MockAnalyserServicesMockRecorder {
 	return m.recorder
 }
 
-// Start mocks base method
-func (m *MockAnalyserServices) Start() error {
-	ret := m.ctrl.Call(m, "Start")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// Start indicates an expected call of Start
-func (mr *MockAnalyserServicesMockRecorder) Start() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Start", reflect.TypeOf((*MockAnalyserServices)(nil).Start))
-}
-
-// Close mocks base method
-func (m *MockAnalyserServices) Close() {
-	m.ctrl.Call(m, "Close")
-}
-
-// Close indicates an expected call of Close
-func (mr *MockAnalyserServicesMockRecorder) Close() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockAnalyserServices)(nil).Close))
-}
-
 // SetUpConfig mocks base method
 func (m *MockAnalyserServices) SetUpConfig() sarama_cluster.Config {
 	ret := m.ctrl.Call(m, "SetUpConfig")

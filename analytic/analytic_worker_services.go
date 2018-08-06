@@ -15,8 +15,6 @@ import (
 )
 
 type AnalyserServices interface {
-	Start() error
-	Close()
 	SetUpConfig() cluster.Config
 	SetUpClient(config *sarama.Config) (sarama.Client, error)
 	NewClusterConsumer(groupID string, topic string) (*cluster.Consumer, error)
