@@ -41,7 +41,8 @@ func ActionAnalyserService(cli *cli.Context) {
 		"localhost:9092",
 	}
 
-	analyticService := analytic.NewAnalyticServices(brokers)
+	var v interface{} = analytic.NewAnalyticServices(brokers)
+	analyticService := v.(*analytic.analyticServices)
 	err := analyticService.Start()
 	if err != nil {
 		log.Fatal("Failed to start")
