@@ -12,3 +12,5 @@
 vendor/
 
 .env
+
+glide.lock
