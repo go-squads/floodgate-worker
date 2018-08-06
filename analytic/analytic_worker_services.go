@@ -10,8 +10,6 @@ import (
 	"github.com/Shopify/sarama"
 	cluster "github.com/bsm/sarama-cluster"
 	influx "github.com/go-squads/floodgate-worker/influxdb-handler"
-
-	"github.com/joho/godotenv"
 )
 
 type AnalyserServices interface {
@@ -77,11 +75,6 @@ func (a *analyticServices) SetBrokerAndTopics() error {
 }
 
 func NewAnalyticServices(brokers []string) AnalyserServices {
-	err := godotenv.Load(os.ExpandEnv("$GOPATH/src/github.com/go-squads/floodgate-worker/.env"))
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
 	newTopicEventTopic := os.Getenv("NEW_TOPIC_EVENT")
 
 	return &analyticServices{

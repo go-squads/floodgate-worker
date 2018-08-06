@@ -37,6 +37,7 @@ func main() {
 }
 
 func ActionAnalyserService(cli *cli.Context) {
+	analytic.LoadEnviromentConfig()
 	brokers := []string{
 		"localhost:9092",
 	}
