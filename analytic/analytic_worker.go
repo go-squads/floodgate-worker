@@ -101,13 +101,13 @@ func (w *analyticWorker) storeMessageToDB(message *sarama.ConsumerMessage) {
 	return
 }
 
+// Use when log levels = Error
 func ConvertMessageToInfluxField(message *sarama.ConsumerMessage) (string, int) {
 	messageVal := make(map[string]interface{})
 	_ = json.Unmarshal(message.Value, &messageVal)
 
 	delete(messageVal, "@timestamp")
 	delete(messageVal, "_ctx")
-
 	var listOfValues []string
 	for _, v := range messageVal {
 		listOfValues = append(listOfValues, fmt.Sprint(v))

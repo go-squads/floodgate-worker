@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/go-squads/floodgate-worker/analytic"
 	"github.com/urfave/cli"
@@ -38,8 +39,10 @@ func main() {
 
 func ActionAnalyserService(cli *cli.Context) {
 	analytic.LoadEnviromentConfig()
-	brokers := []string{
-		"localhost:9092",
+	var brokers []string
+	for _, address := range strings.Split(os.Getenv("BROKERS_ADDRESS"), ",") {
+		fmt.Println(address)
+		brokers = append(brokers, address)
 	}
 
 	analyticService := analytic.NewAnalyticServices(brokers)

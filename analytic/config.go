@@ -13,6 +13,7 @@ const (
 	InfoFlag    = "INFO"
 	WarningFlag = "WARNING"
 	DebugFlag   = "DEBUG"
+	LevelFlag   = "LOG_LEVEL"
 )
 
 func configLogLevelMapping() map[string]string {
@@ -23,6 +24,7 @@ func configLogLevelMapping() map[string]string {
 	mapToFlag(logMap, "INFO_LEVELS", InfoFlag)
 	mapToFlag(logMap, "WARNING_LEVELS", WarningFlag)
 	mapToFlag(logMap, "DEBUG_LEVELS", DebugFlag)
+	mapToFlag(logMap, "LOG_LEVEL_KEY_NAME", LevelFlag)
 	return logMap
 }
 
