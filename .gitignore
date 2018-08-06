@@ -13,3 +13,5 @@ vendor/
 
 glide.lock
 .env
+
+glide.lock
