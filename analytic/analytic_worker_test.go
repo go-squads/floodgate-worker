@@ -139,3 +139,13 @@ func sampleMsg(message ...*sarama.ConsumerMessage) <-chan *sarama.ConsumerMessag
 	timekit.Sleep("1s")
 	return newMsg
 }
+
+func TestExtractCorrectLogLabel(t *testing.T) {
+	worker := NewAnalyticWorker(nil, nil, configLogLevelMapping())
+	var testMap = make(map[string]interface{})
+	testMap["LOG_LEVEL"] = "ERROR"
+	result, exist := worker.getLogLabel(testMap)
+	if !exist || result != "LOG_LEVEL" {
+		t.Error("Failed to extract correct log label")
+	}
+}

@@ -25,16 +25,15 @@ type analyticWorker struct {
 	refreshTopics  func()
 	databaseClient influx.InfluxDB
 	isRunning      bool
-	errorMap       map[string]string
+	logMap         map[string]string
 }
 
-func NewAnalyticWorker(consumer ClusterAnalyser, databaseCon influx.InfluxDB,
-	errorMap map[string]string) *analyticWorker {
+func NewAnalyticWorker(consumer ClusterAnalyser, databaseCon influx.InfluxDB, errorMap map[string]string) *analyticWorker {
 	return &analyticWorker{
 		consumer:       consumer,
 		signalToStop:   make(chan int),
 		databaseClient: databaseCon,
-		errorMap:       errorMap,
+		logMap:         errorMap,
 	}
 }
 
@@ -88,9 +87,10 @@ func (w *analyticWorker) consumeMessage() {
 }
 
 func (w *analyticWorker) storeMessageToDB(message *sarama.ConsumerMessage) {
-	timeVal := make(map[string]string)
+	timeVal := make(map[string]interface{})
 	_ = json.Unmarshal(message.Value, &timeVal)
-	timeToParse, _ := time.Parse(os.Getenv("TIME_LAYOUT"), timeVal["@timestamp"])
+
+	timeToParse, _ := time.Parse(os.Getenv("TIME_LAYOUT"), fmt.Sprint(timeVal["@timestamp"]))
 	columnName, value := ConvertMessageToInfluxField(message)
 	fmt.Println(columnName)
 
@@ -99,6 +99,21 @@ func (w *analyticWorker) storeMessageToDB(message *sarama.ConsumerMessage) {
 	fmt.Println("Time:" + fmt.Sprint(roundedTime))
 	w.databaseClient.InsertToInflux(message.Topic, columnName, value, roundedTime)
 	return
+}
+
+func (w *analyticWorker) getLogLabel(message map[string]interface{}) (string, bool) {
+	keys := make([]string, len(message))
+	for k := range message {
+		keys = append(keys, k)
+	}
+
+	for _, label := range keys {
+		logLabel, exist := w.logMap[label]
+		if exist {
+			return logLabel, true
+		}
+	}
+	return "", false
 }
 
 // Use when log levels = Error
