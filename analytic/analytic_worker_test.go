@@ -39,7 +39,7 @@ func TestAnalyticWorker(t *testing.T) {
 	influxDB := models.NewInfluxService(8086, "localhost", "analyticsdbtest", "gopayadmin", "gopayadmin")
 	influxDB.InitDB()
 
-	worker := NewAnalyticWorker(consumer, influxDB)
+	worker := NewAnalyticWorker(consumer, influxDB, configLogLevelMapping())
 
 	var got *sarama.ConsumerMessage
 
@@ -78,7 +78,7 @@ func TestAnalyticWorkerZeroParam_ErrorBadkafka(t *testing.T) {
 	influxDB := models.NewInfluxService(8086, "localhost", "analyticsdbtest", "gopayadmin", "gopayadmin")
 	influxDB.InitDB()
 
-	worker := NewAnalyticWorker(consumer, influxDB)
+	worker := NewAnalyticWorker(consumer, influxDB, configLogLevelMapping())
 
 	var got *sarama.ConsumerMessage
 	worker.OnSuccess(func(message *sarama.ConsumerMessage) { got = message })

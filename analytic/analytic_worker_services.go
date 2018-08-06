@@ -27,6 +27,7 @@ type analyticServices struct {
 	brokers    []string
 	topicList  []string
 	workerList map[string]AnalyticWorker
+	errorMap   map[string]string
 
 	database      influx.InfluxDB
 	clusterConfig cluster.Config
@@ -88,6 +89,7 @@ func NewAnalyticServices(brokers []string) AnalyserServices {
 		workerList:        make(map[string]AnalyticWorker),
 		database:          connectToInflux(),
 		newTopicEventName: newTopicEventTopic,
+		errorMap:          configLogLevelMapping(),
 	}
 }
 
@@ -107,7 +109,7 @@ func (a *analyticServices) spawnNewAnalyser(topic string, initialOffset int64) e
 	if err != nil {
 		log.Printf("Cluster consumer analyser creation failure")
 	}
-	worker := NewAnalyticWorker(analyserCluster, a.database)
+	worker := NewAnalyticWorker(analyserCluster, a.database, a.errorMap)
 	a.workerList[topic] = worker
 	fmt.Println("Spawned worker for " + topic)
 	return err
@@ -162,7 +164,7 @@ func (a *analyticServices) spawnTopicRefresher() error {
 		log.Printf("Failed to create a topic refresher")
 	}
 
-	topicRefresher := NewAnalyticWorker(refresherCluster, a.database)
+	topicRefresher := NewAnalyticWorker(refresherCluster, a.database, a.errorMap)
 	fmt.Println("Spawned a topic refresher")
 	topicRefresher.Start(a.OnNewTopicEvent)
 	return err

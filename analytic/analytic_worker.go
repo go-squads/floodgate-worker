@@ -27,9 +27,11 @@ type analyticWorker struct {
 	refreshTopics  func()
 	databaseClient influx.InfluxDB
 	isRunning      bool
+	errorMap       map[string]string
 }
 
-func NewAnalyticWorker(consumer ClusterAnalyser, databaseCon influx.InfluxDB) *analyticWorker {
+func NewAnalyticWorker(consumer ClusterAnalyser, databaseCon influx.InfluxDB,
+	errorMap map[string]string) *analyticWorker {
 	err := godotenv.Load(os.ExpandEnv("$GOPATH/src/github.com/go-squads/floodgate-worker/.env"))
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -38,6 +40,7 @@ func NewAnalyticWorker(consumer ClusterAnalyser, databaseCon influx.InfluxDB) *a
 		consumer:       consumer,
 		signalToStop:   make(chan int),
 		databaseClient: databaseCon,
+		errorMap:       errorMap,
 	}
 }
 
