@@ -87,9 +87,9 @@ func TestCheckForNewTopicEvent(t *testing.T) {
 	testService := v.(*analyticServices)
 	testService.clusterConfig = testService.SetUpConfig()
 	testService.topicList = []string{"wow-test_logs"}
-	testService.client = nil
 	brokerConfig := sarama.NewConfig()
 	testService.brokersConfig = *brokerConfig
+	testService.client, _ = testService.SetUpClient(&testService.brokersConfig)
 	testService.OnNewTopicEvent(test)
 	log.Print(testService.newTopicToCreate)
 	if testService.newTopicToCreate != "analytic-test_logs" {
@@ -115,9 +115,9 @@ func TestOnNewTopicEventDoNotRemakeOldTopic(t *testing.T) {
 		Headers:        nil,
 	}
 
-	secTest := &sarama.ConsumerMessage{
+	secMessage := &sarama.ConsumerMessage{
 		Key:            []byte{},
-		Value:          []byte("thisisa-test_logs"),
+		Value:          []byte("new-test_logs"),
 		Topic:          "new_topic_events",
 		Partition:      0,
 		Offset:         0,
@@ -130,13 +130,14 @@ func TestOnNewTopicEventDoNotRemakeOldTopic(t *testing.T) {
 	testService := v.(*analyticServices)
 	testService.clusterConfig = testService.SetUpConfig()
 	testService.topicList = []string{"wow-test_logs"}
-	testService.client = nil
 	brokerConfig := sarama.NewConfig()
 	testService.brokersConfig = *brokerConfig
+	testService.client, _ = testService.SetUpClient(&testService.brokersConfig)
 	testService.OnNewTopicEvent(test)
-	testService.OnNewTopicEvent(secTest)
+	testService.OnNewTopicEvent(secMessage)
 	testService.OnNewTopicEvent(test)
-	if testService.newTopicToCreate != "thisisa-test_logs" {
-		t.Error("Old topics triggered the new topic event")
+	log.Print(testService.newTopicToCreate)
+	if testService.newTopicToCreate != "new-test_logs" {
+		t.Error("Error in detecting creating new topic event")
 	}
 }
