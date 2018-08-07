@@ -108,9 +108,9 @@ func (w *analyticWorker) parseAndStoreLogLevel(logLevelLabel string, logLevelVal
 	if !exist || w.logMap[logLevelValue] == LevelFlag {
 		w.databaseClient.InsertToInflux(message.Topic, UnknownFlag, 1, messageTime)
 		return
-	} else {
-		w.databaseClient.InsertToInflux(message.Topic, w.logMap[logLevelValue], 1, messageTime)
 	}
+
+	w.databaseClient.InsertToInflux(message.Topic, w.logMap[logLevelValue], 1, messageTime)
 
 	if w.logMap[logLevelValue] == ErrorFlag {
 		methodColumnName, incValue := ConvertMessageToInfluxField(message, logLevelLabel)
