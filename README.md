@@ -20,13 +20,14 @@ cluster_analyser is an interface for *sarama.consumer to allow us to mock it for
 
 AnalyticServices creates a Service which will spawn a Consumer group for every topic. When starting the AnalyticService, it will spawn two types of worker. Firstly, it will spawn a worker that will watch for incoming new topic events that is sent by the barito-flow producer. If this worker(we named it topic refresher) detects a new topic, it will spawn a new analytic worker for that particular topic. 
 
-## Installation/Running Instructions
+## Installation/Running Instructions  
 * Install Go (if you haven't), follow all the instructions from [here](https://glide.readthedocs.io/en/latest/getting-started/) including setting the $GOPATH
 * Clone this repository    
 * cd into the project directory: cd floodgate-worker
 * Install glide (if you haven't) from [here](https://glide.readthedocs.io/en/latest/getting-started/)
 * Run ```glide install```
-* Download kafka from the link provided [here](https://kafka.apache.org/quickstart) 
+* Download kafka from the link provided [here](http://archive.apache.org/dist/kafka/1.1.0/kafka_2.11-1.1.0.tgz) 
+* If an error occured, i.e., an error related to JVM. Go to kafka-run-class.sh located inside the bin file of the kafka file and change the line on 251 or 252 to the following: ``` JAVA_MAJOR_VERSION=$($JAVA -version 2>&1 | sed -E -n 's/.* version "([^.-]*).*/\1/p')```  
 * Unzip it and cd into the kafka directory  
 * Run the zookeeper with: ```bin/zookeeper-server-start.sh config/zookeeper.properties```
 * Run the server with:```bin/kafka-server-start.sh config/server.properties``` (in another terminal window)   

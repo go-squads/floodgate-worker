@@ -126,6 +126,10 @@ func TestOnNewTopicEventDoNotRemakeOldTopic(t *testing.T) {
 		Headers:        nil,
 	}
 
+	mockMessage := mock.NewMockClusterAnalyser(ctrl)
+	mockMessage.EXPECT().Messages().AnyTimes().Return(sampleMsg(secMessage))
+	mockMessage.EXPECT().MarkOffset(gomock.Any(), gomock.Any())
+
 	var v interface{} = NewAnalyticServices([]string{"localhost:9092"})
 	testService := v.(*analyticServices)
 	testService.clusterConfig = testService.SetUpConfig()
