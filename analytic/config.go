@@ -14,6 +14,7 @@ const (
 	WarningFlag = "WARNING"
 	DebugFlag   = "DEBUG"
 	LevelFlag   = "LOG_LEVEL"
+	UnknownFlag = "UNKNOWN"
 )
 
 func configLogLevelMapping() map[string]string {

@@ -13,6 +13,8 @@ import:
   - client/v2
 - package: github.com/joho/godotenv
 - package: github.com/urfave/cli
+- package: github.com/sirupsen/logrus
+  version: v1.0.6
 testImport:
 - package: github.com/stretchr/testify
   subpackages:

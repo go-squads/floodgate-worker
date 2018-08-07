@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-
 	influx "github.com/go-squads/floodgate-worker/influxdb-handler"
+	log "github.com/sirupsen/logrus"
 )
 
 type AnalyticWorker interface {
@@ -80,24 +80,43 @@ func (w *analyticWorker) consumeMessage() {
 			}
 		case <-w.signalToStop:
 			w.isRunning = false
-			fmt.Println("Stopped")
+			log.Info("Stopped")
 			return
 		}
 	}
 }
 
 func (w *analyticWorker) storeMessageToDB(message *sarama.ConsumerMessage) {
-	timeVal := make(map[string]interface{})
-	_ = json.Unmarshal(message.Value, &timeVal)
+	messageVal := make(map[string]interface{})
+	_ = json.Unmarshal(message.Value, &messageVal)
 
-	timeToParse, _ := time.Parse(os.Getenv("TIME_LAYOUT"), fmt.Sprint(timeVal["@timestamp"]))
-	columnName, value := ConvertMessageToInfluxField(message)
-	fmt.Println(columnName)
-
+	timeToParse, _ := time.Parse(os.Getenv("TIME_LAYOUT"), fmt.Sprint(messageVal["@timestamp"]))
 	roundedTime := time.Date(timeToParse.Year(), timeToParse.Month(), timeToParse.Day(),
 		timeToParse.Hour(), 0, 0, 0, timeToParse.Location())
-	fmt.Println("Time:" + fmt.Sprint(roundedTime))
-	w.databaseClient.InsertToInflux(message.Topic, columnName, value, roundedTime)
+	logLevelLabel, exist := w.getLogLabel(messageVal)
+	if !exist {
+		w.databaseClient.InsertToInflux(message.Topic, UnknownFlag, 1, roundedTime)
+	} else {
+		value := fmt.Sprint(messageVal[logLevelLabel])
+		w.parseAndStoreLogLevel(logLevelLabel, value, message, roundedTime)
+	}
+	return
+}
+
+func (w *analyticWorker) parseAndStoreLogLevel(logLevelLabel string, logLevelValue string, message *sarama.ConsumerMessage, messageTime time.Time) {
+	_, exist := w.logMap[logLevelValue]
+	if !exist || w.logMap[logLevelValue] == LevelFlag {
+		w.databaseClient.InsertToInflux(message.Topic, UnknownFlag, 1, messageTime)
+		return
+	} else {
+		w.databaseClient.InsertToInflux(message.Topic, w.logMap[logLevelValue], 1, messageTime)
+	}
+
+	if w.logMap[logLevelValue] == ErrorFlag {
+		methodColumnName, incValue := ConvertMessageToInfluxField(message, logLevelLabel)
+		topicErrorName := message.Topic + "_Errors"
+		w.databaseClient.InsertToInflux(topicErrorName, methodColumnName, incValue, messageTime)
+	}
 	return
 }
 
@@ -117,10 +136,11 @@ func (w *analyticWorker) getLogLabel(message map[string]interface{}) (string, bo
 }
 
 // Use when log levels = Error
-func ConvertMessageToInfluxField(message *sarama.ConsumerMessage) (string, int) {
+func ConvertMessageToInfluxField(message *sarama.ConsumerMessage, logLabel string) (string, int) {
 	messageVal := make(map[string]interface{})
 	_ = json.Unmarshal(message.Value, &messageVal)
 
+	delete(messageVal, logLabel)
 	delete(messageVal, "@timestamp")
 	delete(messageVal, "_ctx")
 	var listOfValues []string

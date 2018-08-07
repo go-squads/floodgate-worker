@@ -3,11 +3,11 @@ package dbhandler
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/url"
 	"time"
 
 	client "github.com/influxdata/influxdb/client/v2"
+	log "github.com/sirupsen/logrus"
 )
 
 type InfluxDB interface {
@@ -36,10 +36,10 @@ func NewInfluxService(port int, host, dbname, username, password string) InfluxD
 }
 
 func (influxDb *influxDb) InitDB() error {
-	fmt.Println("Trying to connect to " + influxDb.DatabaseName + " database")
+	log.Info("Trying to connect to " + influxDb.DatabaseName + " database")
 	addr, err := url.Parse(fmt.Sprintf("http://%s:%d", influxDb.Host, influxDb.Port))
 	if err != nil {
-		log.Print("InfluxDB : Invalid Url,Please check domain name given\nError Details: ", err.Error())
+		log.Error("InfluxDB : Invalid Url,Please check domain name given\nError Details: ", err.Error())
 		return err
 	}
 
@@ -55,20 +55,20 @@ func (influxDb *influxDb) InitDB() error {
 	_, _, err = influxDb.DatabaseConnection.Ping(10 * time.Second)
 
 	if err != nil {
-		println("InfluxDB : Failed to connect to Database . Please check the details entered\nError Details: ", err.Error())
+		log.Error("InfluxDB : Failed to connect to Database . Please check the details entered\nError Details: ", err.Error())
 		return err
 	}
 
 	createDbErr := influxDb.createDatabase(influxDb.DatabaseName)
 	if createDbErr != nil {
 		if createDbErr.Error() != "database already exists" {
-			println("InfluxDB : Failed to create Database")
+			log.Warn("InfluxDB : Failed to create Database")
 			return createDbErr
 		}
 
 	}
 
-	fmt.Println("Successfully connected to " + influxDb.DatabaseName + " database!")
+	log.Info("Successfully connected to " + influxDb.DatabaseName + " database!")
 	return nil
 }
 

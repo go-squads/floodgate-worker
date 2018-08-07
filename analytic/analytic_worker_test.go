@@ -72,7 +72,6 @@ func TestAnalyticWorkerZeroParam_ErrorBadkafka(t *testing.T) {
 	consumer := mock.NewMockClusterAnalyser(ctrl)
 
 	consumer.EXPECT().Messages().AnyTimes().Return(sampleMsg(want))
-	consumer.EXPECT().MarkOffset(gomock.Any(), gomock.Any())
 	consumer.EXPECT().Close()
 
 	influxDB := models.NewInfluxService(8086, "localhost", "analyticsdbtest", "gopayadmin", "gopayadmin")
@@ -106,7 +105,7 @@ func TestMessageConvertedToInfluxFieldRight(t *testing.T) {
 		Headers:        nil,
 	}
 
-	colName, value := ConvertMessageToInfluxField(test)
+	colName, value := ConvertMessageToInfluxField(test, "")
 	assert.Equal(t, "200_POST", colName, "Column name should be 200_POST")
 	assert.Equal(t, 1, value, "Value should be one")
 }
@@ -123,7 +122,7 @@ func TestBadMessageConvertToInfluxField(t *testing.T) {
 		Headers:        nil,
 	}
 
-	colName, value := ConvertMessageToInfluxField(test)
+	colName, value := ConvertMessageToInfluxField(test, "")
 	assert.Equal(t, "", colName, "Column Name returned should be empty")
 	assert.Equal(t, 0, value, "Value returned should be zero")
 }
@@ -155,7 +154,7 @@ func TestIfInvalidLogLabel(t *testing.T) {
 	var testMap = make(map[string]interface{})
 	testMap["ERROR"] = "ERROR"
 	result, exist := worker.getLogLabel(testMap)
-	if exist || result == "LOG_LEVEL" {
+	if exist || result == "ERROR" {
 		t.Error("Failed to detect it's an invalid log level")
 	}
 }

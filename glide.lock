@@ -1,12 +1,10 @@
-hash: d54b4d4c4dfc598962d94ecb73ddbc1370cd9d6be1b6704040502f47a48832e4
-updated: 2018-08-01T10:51:47.451895+07:00
+hash: 0f389cae0e1acde99809f112240634c4d1b6eb920695840eed0fb2dddb620cca
+updated: 2018-08-07T08:21:24.518846+07:00
 imports:
 - name: github.com/BaritoLog/go-boilerplate
   version: 20c4c30023960bc27eb5e4662207a0bcaae04f11
   subpackages:
   - timekit
-- name: github.com/bouk/monkey
-  version: 5df1f207ff77e025801505ae4d903133a0b4353f
 - name: github.com/bsm/sarama-cluster
   version: cf455bc755fe41ac9bb2861e7a961833d9c2ecc3
 - name: github.com/davecgh/go-spew
@@ -22,13 +20,13 @@ imports:
 - name: github.com/eapache/queue
   version: 093482f3f8ce946c05bcba64badd2c82369e084d
 - name: github.com/golang/mock
-  version: 22bbf0ddf08105dfa364d0a2fa619dfa71014af5
+  version: 5f7a43820b4647d500f43b4ffcf344eaf01bcad5
   subpackages:
   - gomock
 - name: github.com/golang/snappy
-  version: 2e65f85255dbc3072edf28d6b5b8efc472979f5a
+  version: d9eb7a3d35ec988b8585d4a0068e462c27d28380
 - name: github.com/influxdata/influxdb
-  version: 3e12599a44acc297a5f20b89cec70767a3adcb88
+  version: 3bcb8ad9b24f8036a6ab20cd985df8e2e341111a
   subpackages:
   - client/v2
   - models
@@ -43,13 +41,26 @@ imports:
   version: e2704e165165ec55d062f5919b4b29494e9fa790
 - name: github.com/Shopify/sarama
   version: 35324cf48e33d8260e1c7c18854465a904ade249
+- name: github.com/sirupsen/logrus
+  version: 3e01752db0189b9157070a0e1668a620f9a85da2
 - name: github.com/urfave/cli
   version: 8e01ec4cd3e2d84ab2fe90d8210528ffbb06d8ff
+- name: golang.org/x/crypto
+  version: 80fca2ff14a3fb7db622c9a5462f8ce9ea026cba
+  subpackages:
+  - ssh/terminal
 - name: golang.org/x/net
-  version: 49c15d80dfbc983ea25246ee959d970efe09ec09
+  version: 92b859f39abd2d91a854c9f9c4621b2f5054a92d
   subpackages:
   - context
+- name: golang.org/x/sys
+  version: d8e400bc7db4870d786864138af681469693d18c
+  subpackages:
+  - unix
+  - windows
 testImports:
+- name: github.com/bouk/monkey
+  version: 5df1f207ff77e025801505ae4d903133a0b4353f
 - name: github.com/pmezard/go-difflib
   version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:

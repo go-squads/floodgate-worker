@@ -1,8 +1,6 @@
 package analytic
 
 import (
-	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -10,6 +8,7 @@ import (
 	"github.com/Shopify/sarama"
 	cluster "github.com/bsm/sarama-cluster"
 	influx "github.com/go-squads/floodgate-worker/influxdb-handler"
+	log "github.com/sirupsen/logrus"
 )
 
 type AnalyserServices interface {
@@ -54,7 +53,7 @@ func (a *analyticServices) SetUpClient(config *sarama.Config) (sarama.Client, er
 func (a *analyticServices) NewClusterConsumer(groupID string, topic string) (*cluster.Consumer, error) {
 	analyserCluster, err := cluster.NewConsumer(a.brokers, groupID, []string{topic}, &a.clusterConfig)
 	if err != nil {
-		log.Printf("Failed to create a cluster of analyser")
+		log.Error("Failed to create a cluster of analyser")
 	}
 	return analyserCluster, err
 }
@@ -64,7 +63,7 @@ func (a *analyticServices) SetBrokerAndTopics() error {
 	analyserClusterConfig := a.SetUpConfig()
 	brokerClient, err := a.SetUpClient(brokerConfig)
 	if err != nil {
-		log.Print("Failed to connect to broker...")
+		log.Error("Failed to connect to broker...")
 	}
 	topicList, _ := brokerClient.Topics()
 	a.clusterConfig = analyserClusterConfig
@@ -100,11 +99,11 @@ func (a *analyticServices) spawnNewAnalyser(topic string, initialOffset int64) e
 	// Mock this part
 	analyserCluster, err := a.NewClusterConsumer(os.Getenv("CONSUMER_GROUP_ID"), topic)
 	if err != nil {
-		log.Printf("Cluster consumer analyser creation failure")
+		log.Error("Cluster consumer analyser creation failure")
 	}
 	worker := NewAnalyticWorker(analyserCluster, a.database, a.errorMap)
 	a.workerList[topic] = worker
-	fmt.Println("Spawned worker for " + topic)
+	log.Info("Spawned worker for " + topic)
 	return err
 }
 
@@ -154,11 +153,11 @@ func (a *analyticServices) spawnTopicRefresher() error {
 	a.clusterConfig.Config.Consumer.Offsets.Initial = sarama.OffsetNewest
 	refresherCluster, err := a.NewClusterConsumer(os.Getenv("TOPIC_REFRESHER_GROUP_ID"), os.Getenv("NEW_TOPIC_EVENT"))
 	if err != nil {
-		log.Printf("Failed to create a topic refresher")
+		log.Error("Failed to create a topic refresher")
 	}
 
 	topicRefresher := NewAnalyticWorker(refresherCluster, a.database, a.errorMap)
-	fmt.Println("Spawned a topic refresher")
+	log.Info("Spawned a topic refresher")
 	topicRefresher.Start(a.OnNewTopicEvent)
 	return err
 }
@@ -174,7 +173,7 @@ func (a *analyticServices) OnNewTopicEvent(message *sarama.ConsumerMessage) {
 	a.newTopicToCreate = topicToCheck
 	err := a.spawnNewAnalyserForNewTopic()
 	if err != nil {
-		log.Print("Failed to spawn new topic")
+		log.Error("Failed to spawn new topic")
 	}
 	worker := a.workerList[a.newTopicToCreate]
 	worker.Start()
