@@ -101,7 +101,7 @@ func (a *analyticServices) spawnNewAnalyser(topic string, initialOffset int64) e
 	if err != nil {
 		log.Error("Cluster consumer analyser creation failure")
 	}
-	worker := NewAnalyticWorker(analyserCluster, a.database, a.errorMap)
+	worker := NewAnalyticWorker(analyserCluster, a.database, a.errorMap, topic)
 	a.workerList[topic] = worker
 	log.Info("Spawned worker for " + topic)
 	return err
@@ -156,7 +156,7 @@ func (a *analyticServices) spawnTopicRefresher() error {
 		log.Error("Failed to create a topic refresher")
 	}
 
-	topicRefresher := NewAnalyticWorker(refresherCluster, a.database, a.errorMap)
+	topicRefresher := NewAnalyticWorker(refresherCluster, a.database, a.errorMap, os.Getenv("NEW_TOPIC_EVENT"))
 	log.Info("Spawned a topic refresher")
 	topicRefresher.Start(a.OnNewTopicEvent)
 	return err

@@ -112,7 +112,6 @@ func (influxDb *influxDb) GetFieldValueIfExist(columnName string, measurement st
 	if resp.Error() != nil {
 		return 0
 	} else {
-		fmt.Println(fmt.Sprint(resp.Results[0].Series) + "=>>>>>" + fmt.Sprint(len(resp.Results[0].Series)))
 		if len(resp.Results[0].Series) != 0 {
 			res, err := resp.Results[0].Series[0].Values[0][1].(json.Number).Int64()
 			if err != nil {

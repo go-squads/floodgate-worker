@@ -11,6 +11,7 @@ import (
 	influx "github.com/go-squads/floodgate-worker/influxdb-handler"
 	"github.com/go-squads/floodgate-worker/mailer"
 	log "github.com/sirupsen/logrus"
+	cron "gopkg.in/robfig/cron.v2"
 )
 
 type AnalyticWorker interface {
@@ -20,21 +21,25 @@ type AnalyticWorker interface {
 }
 
 type analyticWorker struct {
-	consumer       ClusterAnalyser
-	signalToStop   chan int
-	onSuccessFunc  func(*sarama.ConsumerMessage)
-	refreshTopics  func()
-	databaseClient influx.InfluxDB
-	isRunning      bool
-	logMap         map[string]string
+	consumer           ClusterAnalyser
+	signalToStop       chan int
+	onSuccessFunc      func(*sarama.ConsumerMessage)
+	refreshTopics      func()
+	databaseClient     influx.InfluxDB
+	isRunning          bool
+	logMap             map[string]string
+	subscribedTopic    string
+	notificationWorker *cron.Cron
 }
 
-func NewAnalyticWorker(consumer ClusterAnalyser, databaseCon influx.InfluxDB, errorMap map[string]string) *analyticWorker {
+func NewAnalyticWorker(consumer ClusterAnalyser, databaseCon influx.InfluxDB, errorMap map[string]string, topic string) *analyticWorker {
 	return &analyticWorker{
-		consumer:       consumer,
-		signalToStop:   make(chan int),
-		databaseClient: databaseCon,
-		logMap:         errorMap,
+		consumer:           consumer,
+		signalToStop:       make(chan int),
+		databaseClient:     databaseCon,
+		logMap:             errorMap,
+		subscribedTopic:    topic,
+		notificationWorker: cron.New(),
 	}
 }
 
@@ -59,6 +64,12 @@ func (w *analyticWorker) Start(f ...func(*sarama.ConsumerMessage)) {
 
 	w.isRunning = true
 	go w.consumeMessage()
+	go w.startCronJob()
+}
+
+func (w *analyticWorker) startCronJob() {
+	w.notificationWorker.AddFunc("@every 5s", func() { w.checkErrorThreshold(w.subscribedTopic) })
+	w.notificationWorker.Start()
 }
 
 func (w *analyticWorker) Stop() {
@@ -69,6 +80,8 @@ func (w *analyticWorker) Stop() {
 	go func() {
 		w.signalToStop <- 1
 	}()
+
+	w.notificationWorker.Stop()
 }
 
 func (w *analyticWorker) consumeMessage() {
@@ -117,7 +130,6 @@ func (w *analyticWorker) parseAndStoreLogLevel(logLevelLabel string, logLevelVal
 		methodColumnName, incValue := ConvertMessageToInfluxField(message, logLevelLabel)
 		topicErrorName := message.Topic + "_Errors"
 		w.databaseClient.InsertToInflux(topicErrorName, methodColumnName, incValue, messageTime)
-		w.checkErrorThreshold(message.Topic, messageTime)
 	}
 	return
 }
@@ -163,12 +175,25 @@ func ConvertMessageToInfluxField(message *sarama.ConsumerMessage, logLabel strin
 	}
 }
 
-func (w *analyticWorker) checkErrorThreshold(topic string, messageTime time.Time) {
-	errorValue := w.databaseClient.GetFieldValueIfExist(ErrorFlag, topic, messageTime)
-	trafficValue := w.databaseClient.GetFieldValueIfExist(InfoFlag, topic, messageTime)
+func (w *analyticWorker) printStuff() {
+	log.Info("Printing")
+}
 
-	if trafficValue+errorValue > 100 {
+// Use cron job, do the same for warning
+// Use InfluxTime
+func (w *analyticWorker) checkErrorThreshold(topic string) {
+	curTime := time.Now()
+	roundedTime := time.Date(curTime.Year(), curTime.Month(), curTime.Day(),
+		curTime.Hour(), 0, 0, 0, curTime.Location())
+	errorValue := w.databaseClient.GetFieldValueIfExist(ErrorFlag, topic, roundedTime)
+	trafficValue := w.databaseClient.GetFieldValueIfExist(InfoFlag, topic, roundedTime)
+	log.Info(curTime)
+	log.Infof("ERROR VAL: %d", errorValue)
+	log.Infof("TRAFFIC VAL: %d", trafficValue)
+
+	if trafficValue+errorValue > 5 {
 		errorPercentage := (errorValue / (trafficValue + errorValue)) * 100
+		log.Info(errorPercentage)
 		if errorPercentage >= errorThreshold {
 			log.Info("SENT ERROR MAIL NOTIFICATION")
 			mailer.SendMail(topic, ErrorFlag)

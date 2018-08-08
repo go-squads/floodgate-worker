@@ -75,9 +75,9 @@ func SendMail(level string, topic string) {
 	senderAccount.username = "gosquad20@gmail.com"
 	senderAccount.password = "gojekgosquad2.0"
 	// This will change
-	mail.toIds = []string{"vso_f1@yahoo.com"}
+	mail.toIds = []string{"hearthstone0298@gmail.com"}
 	mail.subject = "This is the email subject"
-	mail.body = "Harry Potter and threat to Israel\n\nGood editing!!"
+	mail.body = "This is the test message!"
 	// This will change
 
 	client := smtpServer.connectToServer(senderAccount)
