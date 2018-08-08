@@ -9,6 +9,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	influx "github.com/go-squads/floodgate-worker/influxdb-handler"
+	"github.com/go-squads/floodgate-worker/mailer"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -116,6 +117,7 @@ func (w *analyticWorker) parseAndStoreLogLevel(logLevelLabel string, logLevelVal
 		methodColumnName, incValue := ConvertMessageToInfluxField(message, logLevelLabel)
 		topicErrorName := message.Topic + "_Errors"
 		w.databaseClient.InsertToInflux(topicErrorName, methodColumnName, incValue, messageTime)
+		w.checkErrorThreshold(message.Topic, messageTime)
 	}
 	return
 }
@@ -159,7 +161,19 @@ func ConvertMessageToInfluxField(message *sarama.ConsumerMessage, logLabel strin
 	} else {
 		return "", 0
 	}
+}
 
+func (w *analyticWorker) checkErrorThreshold(topic string, messageTime time.Time) {
+	errorValue := w.databaseClient.GetFieldValueIfExist(ErrorFlag, topic, messageTime)
+	trafficValue := w.databaseClient.GetFieldValueIfExist(InfoFlag, topic, messageTime)
+
+	if trafficValue+errorValue > 100 {
+		errorPercentage := (errorValue / (trafficValue + errorValue)) * 100
+		if errorPercentage >= errorThreshold {
+			log.Info("SENT ERROR MAIL NOTIFICATION")
+			mailer.SendMail(topic, ErrorFlag)
+		}
+	}
 }
 
 func (w *analyticWorker) checkIfRunning() bool {
