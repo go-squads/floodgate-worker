@@ -68,8 +68,10 @@ func (w *analyticWorker) Start(f ...func(*sarama.ConsumerMessage)) {
 }
 
 func (w *analyticWorker) startCronJob() {
-	w.notificationWorker.AddFunc("@every 10s", func() { w.checkThresholdLimit(WarningFlag, warningThreshold) })
-	w.notificationWorker.AddFunc("@every 10s", func() { w.checkThresholdLimit(ErrorFlag, errorThreshold) })
+	warningInterval := "@every " + os.Getenv("WARNING_TIME_INTERVAL")
+	errorInterval := "@every " + os.Getenv("ERROR_TIME_INTERVAL")
+	w.notificationWorker.AddFunc(warningInterval, func() { w.checkThresholdLimit(WarningFlag, warningThreshold) })
+	w.notificationWorker.AddFunc(errorInterval, func() { w.checkThresholdLimit(ErrorFlag, errorThreshold) })
 	w.notificationWorker.Start()
 }
 
