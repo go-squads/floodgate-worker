@@ -68,8 +68,8 @@ func (w *analyticWorker) Start(f ...func(*sarama.ConsumerMessage)) {
 }
 
 func (w *analyticWorker) startCronJob() {
-	w.notificationWorker.AddFunc("@every 10s", func() { w.checkThresholdLimit(WarningFlag, errorThreshold) })
-	w.notificationWorker.AddFunc("@every 10s", func() { w.checkThresholdLimit(ErrorFlag, warningThreshold) })
+	w.notificationWorker.AddFunc("@every 10s", func() { w.checkThresholdLimit(WarningFlag, warningThreshold) })
+	w.notificationWorker.AddFunc("@every 10s", func() { w.checkThresholdLimit(ErrorFlag, errorThreshold) })
 	w.notificationWorker.Start()
 }
 
@@ -176,10 +176,6 @@ func ConvertMessageToInfluxField(message *sarama.ConsumerMessage, logLabel strin
 	}
 }
 
-func (w *analyticWorker) printStuff() {
-	log.Info("Printing")
-}
-
 func (w *analyticWorker) checkThresholdLimit(flag string, threshold int) {
 	currentTime := time.Now()
 	influxTime := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(),
@@ -188,10 +184,7 @@ func (w *analyticWorker) checkThresholdLimit(flag string, threshold int) {
 	trafficValue := w.databaseClient.GetFieldValueIfExist(LevelFlag, w.subscribedTopic, influxTime)
 
 	if flagValue+trafficValue >= minimumDataThreshold {
-		log.Infof("Flag value for %s: %d", w.subscribedTopic, flagValue)
-		log.Infof("Traffic value for %s: %d", w.subscribedTopic, trafficValue)
 		anomalyPercentage := ((flagValue / (flagValue + trafficValue)) * 100)
-		log.Infof("Anomaly percentage: %d", anomalyPercentage)
 		if anomalyPercentage >= threshold {
 			log.Infof("SENT %s MAIL NOTIFICATION", flag)
 			mailer.SendMail(w.subscribedTopic, flag)
