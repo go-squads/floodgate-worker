@@ -25,12 +25,19 @@ AnalyticServices creates a Service which will spawn a Consumer group for every t
 * Clone this repository    
 * cd into the project directory: cd floodgate-worker
 * Install glide (if you haven't) from [here](https://glide.readthedocs.io/en/latest/getting-started/)
-* Run ```glide install```
-* Download kafka from the link provided [here](http://archive.apache.org/dist/kafka/1.1.0/kafka_2.11-1.1.0.tgz) 
-* If an error occured, i.e., an error related to JVM. Go to kafka-run-class.sh located inside the bin file of the kafka file and change the line on 251 or 252 to the following: ``` JAVA_MAJOR_VERSION=$($JAVA -version 2>&1 | sed -E -n 's/.* version "([^.-]*).*/\1/p')```  
-* Unzip it and cd into the kafka directory  
-* Run the zookeeper with: ```bin/zookeeper-server-start.sh config/zookeeper.properties```
-* Run the server with:```bin/kafka-server-start.sh config/server.properties``` (in another terminal window)   
+* Run ```glide install```  
+* With brew installed (Highly recommended):  
+  1. ```brew install kafka```   
+  2. To start zookeeper ```brew services start zookeeper```    
+  3. To start kafka server ```brew services start kafka```  
+
+* No brew installed:  
+   1. Download kafka from the link provided [here](http://archive.apache.org/dist/kafka/1.1.0/kafka_2.11-1.1.0.tgz) 
+
+   2. If an error occured, i.e., an error related to JVM. Go to kafka-run-class.sh located inside the bin file of the kafka file and change the line on 251 or 252 to the following: ``` JAVA_MAJOR_VERSION=$($JAVA -version 2>&1 | sed -E -n 's/.* version "([^.-]*).*/\1/p')``` 
+   3. Unzip it and cd into the kafka directory  
+   4. Run the zookeeper with: ```bin/zookeeper-server-start.sh config/zookeeper.properties```    
+   5. Run the server with:```bin/kafka-server-start.sh config/server.properties``` (in another terminal window)   
 * Run with: ```go main.go aw``` in the root of the project directory to run the worker (do this in another terminal window)
 * Clone barito-flow from [here](https://github.com/BaritoLog/barito-flow)
 * Run the barito-flow producer [instructions](https://github.com/BaritoLog/barito-flow)
