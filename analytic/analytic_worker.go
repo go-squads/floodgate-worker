@@ -68,7 +68,8 @@ func (w *analyticWorker) Start(f ...func(*sarama.ConsumerMessage)) {
 }
 
 func (w *analyticWorker) startCronJob() {
-	w.notificationWorker.AddFunc("@every 5s", func() { w.checkErrorThreshold(w.subscribedTopic) })
+	w.notificationWorker.AddFunc("@every 10s", func() { w.checkThresholdLimit(WarningFlag, errorThreshold) })
+	w.notificationWorker.AddFunc("@every 10s", func() { w.checkThresholdLimit(ErrorFlag, warningThreshold) })
 	w.notificationWorker.Start()
 }
 
@@ -179,24 +180,21 @@ func (w *analyticWorker) printStuff() {
 	log.Info("Printing")
 }
 
-// Use cron job, do the same for warning
-// Use InfluxTime
-func (w *analyticWorker) checkErrorThreshold(topic string) {
-	curTime := time.Now()
-	roundedTime := time.Date(curTime.Year(), curTime.Month(), curTime.Day(),
-		curTime.Hour(), 0, 0, 0, curTime.Location())
-	errorValue := w.databaseClient.GetFieldValueIfExist(ErrorFlag, topic, roundedTime)
-	trafficValue := w.databaseClient.GetFieldValueIfExist(InfoFlag, topic, roundedTime)
-	log.Info(curTime)
-	log.Infof("ERROR VAL: %d", errorValue)
-	log.Infof("TRAFFIC VAL: %d", trafficValue)
+func (w *analyticWorker) checkThresholdLimit(flag string, threshold int) {
+	currentTime := time.Now()
+	influxTime := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(),
+		currentTime.Hour(), 0, 0, 0, currentTime.Location())
+	flagValue := w.databaseClient.GetFieldValueIfExist(flag, w.subscribedTopic, influxTime)
+	trafficValue := w.databaseClient.GetFieldValueIfExist(LevelFlag, w.subscribedTopic, influxTime)
 
-	if trafficValue+errorValue > 5 {
-		errorPercentage := (errorValue / (trafficValue + errorValue)) * 100
-		log.Info(errorPercentage)
-		if errorPercentage >= errorThreshold {
-			log.Info("SENT ERROR MAIL NOTIFICATION")
-			mailer.SendMail(topic, ErrorFlag)
+	if flagValue+trafficValue >= minimumDataThreshold {
+		log.Infof("Flag value for %s: %d", w.subscribedTopic, flagValue)
+		log.Infof("Traffic value for %s: %d", w.subscribedTopic, trafficValue)
+		anomalyPercentage := ((flagValue / (flagValue + trafficValue)) * 100)
+		log.Infof("Anomaly percentage: %d", anomalyPercentage)
+		if anomalyPercentage >= threshold {
+			log.Infof("SENT %s MAIL NOTIFICATION", flag)
+			mailer.SendMail(w.subscribedTopic, flag)
 		}
 	}
 }

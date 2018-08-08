@@ -10,16 +10,22 @@ import (
 )
 
 const (
-	ErrorFlag        = "ERROR"
-	InfoFlag         = "INFO"
-	WarningFlag      = "WARNING"
-	DebugFlag        = "DEBUG"
-	LevelFlag        = "LOG_LEVEL"
-	UnknownFlag      = "UNKNOWN"
-	defaultThreshold = 10
+	ErrorFlag                   = "ERROR"
+	InfoFlag                    = "INFO"
+	WarningFlag                 = "WARNING"
+	DebugFlag                   = "DEBUG"
+	LevelFlag                   = "LOG_LEVEL"
+	UnknownFlag                 = "UNKNOWN"
+	defaultErrorThreshold       = 10
+	defaultWarningThreshold     = 30
+	defaultMinimumDataThreshold = 100
 )
 
-var errorThreshold = defaultThreshold
+var (
+	errorThreshold       = defaultErrorThreshold
+	warningThreshold     = defaultWarningThreshold
+	minimumDataThreshold = defaultMinimumDataThreshold
+)
 
 func configLogLevelMapping() map[string]string {
 	LoadEnviromentConfig()
@@ -45,9 +51,16 @@ func LoadEnviromentConfig() {
 		log.Fatal("Error loading .env file")
 	}
 
-	errorThreshold, err = strconv.Atoi(os.Getenv("ERROR_THRESHOLD"))
+	errorThreshold = loadEnviromentThresholds("ERROR_THRESHOLD", defaultErrorThreshold)
+	warningThreshold = loadEnviromentThresholds("WARNING_THRESHOLD", defaultWarningThreshold)
+	minimumDataThreshold = loadEnviromentThresholds("MINIMUM_DATA", defaultMinimumDataThreshold)
+}
+
+func loadEnviromentThresholds(thresholdLabel string, defaultValue int) int {
+	resultThreshold, err := strconv.Atoi(os.Getenv(thresholdLabel))
 	if err != nil {
-		log.Error("Error in loading .env ERROR_THRESHOLD")
-		errorThreshold = defaultThreshold
+		log.Error("Error in converting the .env threshold")
+		resultThreshold = defaultValue
 	}
+	return resultThreshold
 }
