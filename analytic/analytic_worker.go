@@ -186,10 +186,14 @@ func (w *analyticWorker) checkThresholdLimit(flag string, threshold int) {
 	trafficValue := w.databaseClient.GetFieldValueIfExist(LevelFlag, w.subscribedTopic, influxTime)
 
 	if flagValue+trafficValue >= minimumDataThreshold {
+		if flag == WarningFlag {
+			log.Info(flagValue)
+			log.Info(trafficValue)
+		}
 		anomalyPercentage := ((flagValue / (flagValue + trafficValue)) * 100)
 		if anomalyPercentage >= threshold {
 			log.Infof("SENT %s MAIL NOTIFICATION", flag)
-			mailer.SendMail(w.subscribedTopic, flag)
+			mailer.SendMail(flag, w.subscribedTopic)
 		}
 	}
 }

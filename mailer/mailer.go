@@ -4,17 +4,22 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/smtp"
+	"os"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	messageHeader = "%s for %s"
+	messageBody   = "Number of %s logs for topic: %s, has exceeded the threshold limit.\nPlease check the related application"
+)
+
 // Mail implement Mailer
 type mail struct {
-	senderAccount account
-	toIds         []string
-	subject       string
-	body          string
+	toIds   []string
+	subject string
+	body    string
 }
 
 type smtpServer struct {
@@ -22,19 +27,13 @@ type smtpServer struct {
 	port string
 }
 
-// Replace account with env
-type account struct {
-	username string
-	password string
-}
-
-func (s *smtpServer) ServerName() string {
+func (s *smtpServer) getServerName() string {
 	return s.host + ":" + s.port
 }
 
-func (mail *mail) buildMessage() string {
+func (mail *mail) buildHeaderMessage() string {
 	message := ""
-	message += fmt.Sprintf("From: %s\r\n", mail.senderAccount.username)
+	message += fmt.Sprintf("From: %s\r\n", os.Getenv("SENDER_ACC_USERNAME"))
 	if len(mail.toIds) > 0 {
 		message += fmt.Sprintf("To: %s\r\n", strings.Join(mail.toIds, ";"))
 	}
@@ -45,14 +44,14 @@ func (mail *mail) buildMessage() string {
 	return message
 }
 
-func (s *smtpServer) connectToServer(senderAccount account) *smtp.Client {
+func (s *smtpServer) connectToServer() *smtp.Client {
 	log.Println(s.host)
-	auth := smtp.PlainAuth("", senderAccount.username, senderAccount.password, s.host)
+	auth := smtp.PlainAuth("", os.Getenv("SENDER_ACC_USERNAME"), os.Getenv("SENDER_ACC_PASSWORD"), s.host)
 	tlsconfig := &tls.Config{
 		InsecureSkipVerify: true,
 		ServerName:         s.host,
 	}
-	conn, err := tls.Dial("tcp", s.ServerName(), tlsconfig)
+	conn, err := tls.Dial("tcp", s.getServerName(), tlsconfig)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -68,21 +67,20 @@ func (s *smtpServer) connectToServer(senderAccount account) *smtp.Client {
 	return client
 }
 
+func (mail *mail) buildMessageContent(logLevel string, topic string) {
+	mail.subject = fmt.Sprintf(messageHeader, logLevel, topic)
+	mail.body = fmt.Sprintf(messageBody, logLevel, topic)
+}
+
 func SendMail(level string, topic string) {
 	smtpServer := smtpServer{host: "smtp.gmail.com", port: "465"}
 	mail := mail{}
-	senderAccount := account{}
-	senderAccount.username = "gosquad20@gmail.com"
-	senderAccount.password = "gojekgosquad2.0"
-	// This will change
 	mail.toIds = []string{"hearthstone0298@gmail.com"}
-	mail.subject = "This is the email subject"
-	mail.body = "This is the test message!"
-	// This will change
+	mail.buildMessageContent(level, topic)
 
-	client := smtpServer.connectToServer(senderAccount)
+	client := smtpServer.connectToServer()
 
-	err := client.Mail(senderAccount.username)
+	err := client.Mail(os.Getenv("SENDER_ACC_USERNAME"))
 	if err != nil {
 		log.Panic(err)
 	}
@@ -98,8 +96,8 @@ func SendMail(level string, topic string) {
 		log.Panic(err)
 	}
 
-	messageBody := mail.buildMessage()
-	_, err = w.Write([]byte(messageBody))
+	messageHeader := mail.buildHeaderMessage()
+	_, err = w.Write([]byte(messageHeader))
 	if err != nil {
 		log.Panic(err)
 	}
@@ -109,5 +107,5 @@ func SendMail(level string, topic string) {
 		log.Panic(err)
 	}
 	client.Quit()
-	log.Println("Mail sent successfully")
+	log.Info("Mail sent successfully")
 }
