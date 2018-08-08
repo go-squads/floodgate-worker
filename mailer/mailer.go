@@ -3,33 +3,36 @@ package mailer
 import (
 	"crypto/tls"
 	"fmt"
-	"log"
 	"net/smtp"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
-type Mail struct {
+// Mail implement Mailer
+type mail struct {
 	senderAccount account
 	toIds         []string
 	subject       string
 	body          string
 }
 
-type SmtpServer struct {
+type smtpServer struct {
 	host string
 	port string
 }
 
+// Replace account with env
 type account struct {
 	username string
 	password string
 }
 
-func (s *SmtpServer) ServerName() string {
+func (s *smtpServer) ServerName() string {
 	return s.host + ":" + s.port
 }
 
-func (mail *Mail) BuildMessage() string {
+func (mail *mail) buildMessage() string {
 	message := ""
 	message += fmt.Sprintf("From: %s\r\n", mail.senderAccount.username)
 	if len(mail.toIds) > 0 {
@@ -42,7 +45,7 @@ func (mail *Mail) BuildMessage() string {
 	return message
 }
 
-func (s *SmtpServer) connectToServer(senderAccount account) *smtp.Client {
+func (s *smtpServer) connectToServer(senderAccount account) *smtp.Client {
 	log.Println(s.host)
 	auth := smtp.PlainAuth("", senderAccount.username, senderAccount.password, s.host)
 	tlsconfig := &tls.Config{
@@ -65,15 +68,17 @@ func (s *SmtpServer) connectToServer(senderAccount account) *smtp.Client {
 	return client
 }
 
-func SendMail() {
-	smtpServer := SmtpServer{host: "smtp.gmail.com", port: "465"}
-	mail := Mail{}
+func SendMail(level string, topic string) {
+	smtpServer := smtpServer{host: "smtp.gmail.com", port: "465"}
+	mail := mail{}
 	senderAccount := account{}
 	senderAccount.username = "gosquad20@gmail.com"
 	senderAccount.password = "gojekgosquad2.0"
+	// This will change
 	mail.toIds = []string{"vso_f1@yahoo.com"}
 	mail.subject = "This is the email subject"
 	mail.body = "Harry Potter and threat to Israel\n\nGood editing!!"
+	// This will change
 
 	client := smtpServer.connectToServer(senderAccount)
 
@@ -93,7 +98,7 @@ func SendMail() {
 		log.Panic(err)
 	}
 
-	messageBody := mail.BuildMessage()
+	messageBody := mail.buildMessage()
 	_, err = w.Write([]byte(messageBody))
 	if err != nil {
 		log.Panic(err)
