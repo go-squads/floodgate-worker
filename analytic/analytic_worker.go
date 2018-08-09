@@ -30,6 +30,7 @@ type analyticWorker struct {
 	logMap             map[string]string
 	subscribedTopic    string
 	notificationWorker *cron.Cron
+	mailerService      mailer.MailerService
 }
 
 func NewAnalyticWorker(consumer ClusterAnalyser, databaseCon influx.InfluxDB, errorMap map[string]string, topic string) *analyticWorker {
@@ -40,6 +41,7 @@ func NewAnalyticWorker(consumer ClusterAnalyser, databaseCon influx.InfluxDB, er
 		logMap:             errorMap,
 		subscribedTopic:    topic,
 		notificationWorker: cron.New(),
+		mailerService:      mailer.NewMailerService(),
 	}
 }
 
@@ -189,7 +191,7 @@ func (w *analyticWorker) checkThresholdLimit(flag string, threshold int) {
 		anomalyPercentage := ((flagValue / (flagValue + trafficValue)) * 100)
 		if anomalyPercentage >= threshold {
 			log.Infof("SENT %s MAIL NOTIFICATION", flag)
-			mailer.SendMail(flag, w.subscribedTopic)
+			w.mailerService.SendMail(flag, w.subscribedTopic)
 		}
 	}
 }

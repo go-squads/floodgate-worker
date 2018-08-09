@@ -15,6 +15,12 @@ const (
 	messageBody   = "Number of %s logs for topic: %s, has exceeded the threshold limit.\nPlease check the related application"
 )
 
+type MailerService interface {
+	SendMail(string, string)
+}
+
+// Mock the SMTP Server
+// Make an interface
 // Mail implement Mailer
 type mail struct {
 	toIds   []string
@@ -27,21 +33,12 @@ type smtpServer struct {
 	port string
 }
 
-func (s *smtpServer) getServerName() string {
-	return s.host + ":" + s.port
+func NewMailerService() MailerService {
+	return &mail{}
 }
 
-func (mail *mail) buildHeaderMessage() string {
-	message := ""
-	message += fmt.Sprintf("From: %s\r\n", os.Getenv("SENDER_ACC_USERNAME"))
-	if len(mail.toIds) > 0 {
-		message += fmt.Sprintf("To: %s\r\n", strings.Join(mail.toIds, ";"))
-	}
-
-	message += fmt.Sprintf("Subject: %s\r\n", mail.subject)
-	message += "\r\n" + mail.body
-
-	return message
+func (s *smtpServer) getServerName() string {
+	return s.host + ":" + s.port
 }
 
 func (s *smtpServer) connectToServer() *smtp.Client {
@@ -67,14 +64,26 @@ func (s *smtpServer) connectToServer() *smtp.Client {
 	return client
 }
 
+func (mail *mail) buildHeaderMessage() string {
+	message := ""
+	message += fmt.Sprintf("From: %s\r\n", os.Getenv("SENDER_ACC_USERNAME"))
+	if len(mail.toIds) > 0 {
+		message += fmt.Sprintf("To: %s\r\n", strings.Join(mail.toIds, ";"))
+	}
+
+	message += fmt.Sprintf("Subject: %s\r\n", mail.subject)
+	message += "\r\n" + mail.body
+
+	return message
+}
+
 func (mail *mail) buildMessageContent(logLevel string, topic string) {
 	mail.subject = fmt.Sprintf(messageHeader, logLevel, topic)
 	mail.body = fmt.Sprintf(messageBody, logLevel, topic)
 }
 
-func SendMail(level string, topic string) {
+func (mail *mail) SendMail(level string, topic string) {
 	smtpServer := smtpServer{host: "smtp.gmail.com", port: "465"}
-	mail := mail{}
 	mail.toIds = []string{"hearthstone0298@gmail.com"}
 	mail.buildMessageContent(level, topic)
 
