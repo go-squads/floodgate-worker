@@ -12,11 +12,11 @@ import (
 
 const (
 	messageHeader = "%s for %s"
-	messageBody   = "Number of %s logs for topic: %s, has exceeded the threshold limit.\nPlease check the related application"
+	messageBody   = "Number of %s logs for topic: %s, has reached %d. Subsequently, it exceeded the threshold limit of %d.\nPlease check the related application"
 )
 
 type MailerService interface {
-	SendMail(string, string)
+	SendMail(string, string, int, int)
 }
 
 // Mock the SMTP Server
@@ -77,15 +77,15 @@ func (mail *mail) buildHeaderMessage() string {
 	return message
 }
 
-func (mail *mail) buildMessageContent(logLevel string, topic string) {
+func (mail *mail) buildMessageContent(logLevel string, topic string, levelValue int, threshold int) {
 	mail.subject = fmt.Sprintf(messageHeader, logLevel, topic)
-	mail.body = fmt.Sprintf(messageBody, logLevel, topic)
+	mail.body = fmt.Sprintf(messageBody, logLevel, topic, levelValue, threshold)
 }
 
-func (mail *mail) SendMail(level string, topic string) {
+func (mail *mail) SendMail(level string, topic string, levelValue int, threshold int) {
 	smtpServer := smtpServer{host: "smtp.gmail.com", port: "465"}
 	mail.toIds = []string{"hearthstone0298@gmail.com"}
-	mail.buildMessageContent(level, topic)
+	mail.buildMessageContent(level, topic, levelValue, threshold)
 
 	client := smtpServer.connectToServer()
 

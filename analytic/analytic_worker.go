@@ -206,7 +206,7 @@ func (w *analyticWorker) thresholdAlerting(flag string, threshold int) {
 
 	if w.checkThresholdLimit(flagValue, trafficValue, threshold) {
 		log.Infof("SENDING MAIL %s NOTIFICATION!", flag)
-		w.mailerService.SendMail(flag, w.subscribedTopic)
+		w.mailerService.SendMail(flag, w.subscribedTopic, flagValue, threshold)
 	}
 }
 
