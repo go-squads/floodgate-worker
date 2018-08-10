@@ -158,3 +158,21 @@ func TestIfInvalidLogLabel(t *testing.T) {
 		t.Error("Failed to detect it's an invalid log level")
 	}
 }
+
+func TestIfThresholdLimitCalculatedRight(t *testing.T) {
+	worker := NewAnalyticWorker(nil, nil, nil, "analytic-test")
+	result := worker.checkThresholdLimit(100, 30, 10)
+	assert.Equal(t, true, result)
+}
+
+func TestIfThresholdLimitIsSafe(t *testing.T) {
+	worker := NewAnalyticWorker(nil, nil, nil, "analytic-test")
+	result := worker.checkThresholdLimit(10, 0, 20)
+	assert.Equal(t, false, result)
+}
+
+func TestIfTotalDataLessThanThreshold(t *testing.T) {
+	worker := NewAnalyticWorker(nil, nil, nil, "analytic-test")
+	result := worker.checkThresholdLimit(5, 5, 20)
+	assert.Equal(t, false, result)
+}

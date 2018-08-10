@@ -97,51 +97,51 @@ func TestCheckForNewTopicEvent(t *testing.T) {
 	}
 }
 
-func TestOnNewTopicEventDoNotRemakeOldTopic(t *testing.T) {
-	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
+// func TestOnNewTopicEventDoNotRemakeOldTopic(t *testing.T) {
+// 	ctrl := gomock.NewController(t)
+// 	defer ctrl.Finish()
 
-	mockClient := mock.NewMockAnalyserServices(ctrl)
-	mockClient.EXPECT().NewClusterConsumer(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
+// 	mockClient := mock.NewMockAnalyserServices(ctrl)
+// 	mockClient.EXPECT().NewClusterConsumer(gomock.Any(), gomock.Any()).AnyTimes().Return(nil, nil)
 
-	test := &sarama.ConsumerMessage{
-		Key:            []byte{},
-		Value:          []byte("analytic-test_logs"),
-		Topic:          "new_topic_events",
-		Partition:      0,
-		Offset:         0,
-		Timestamp:      time.Now(),
-		BlockTimestamp: time.Now(),
-		Headers:        nil,
-	}
+// 	test := &sarama.ConsumerMessage{
+// 		Key:            []byte{},
+// 		Value:          []byte("analytic-test_logs"),
+// 		Topic:          "new_topic_events",
+// 		Partition:      0,
+// 		Offset:         0,
+// 		Timestamp:      time.Now(),
+// 		BlockTimestamp: time.Now(),
+// 		Headers:        nil,
+// 	}
 
-	secMessage := &sarama.ConsumerMessage{
-		Key:            []byte{},
-		Value:          []byte("new-test_logs"),
-		Topic:          "new_topic_events",
-		Partition:      0,
-		Offset:         0,
-		Timestamp:      time.Now(),
-		BlockTimestamp: time.Now(),
-		Headers:        nil,
-	}
+// 	secMessage := &sarama.ConsumerMessage{
+// 		Key:            []byte{},
+// 		Value:          []byte("new-test_logs"),
+// 		Topic:          "new_topic_events",
+// 		Partition:      0,
+// 		Offset:         0,
+// 		Timestamp:      time.Now(),
+// 		BlockTimestamp: time.Now(),
+// 		Headers:        nil,
+// 	}
 
-	mockMessage := mock.NewMockClusterAnalyser(ctrl)
-	mockMessage.EXPECT().Messages().AnyTimes().Return(sampleMsg(secMessage))
-	mockMessage.EXPECT().MarkOffset(gomock.Any(), gomock.Any())
+// 	mockMessage := mock.NewMockClusterAnalyser(ctrl)
+// 	mockMessage.EXPECT().Messages().AnyTimes().Return(sampleMsg(secMessage))
+// 	mockMessage.EXPECT().MarkOffset(gomock.Any(), gomock.Any())
 
-	var v interface{} = NewAnalyticServices([]string{"localhost:9092"})
-	testService := v.(*analyticServices)
-	testService.clusterConfig = testService.SetUpConfig()
-	testService.topicList = []string{"wow-test_logs"}
-	brokerConfig := sarama.NewConfig()
-	testService.brokersConfig = *brokerConfig
-	testService.client, _ = testService.SetUpClient(&testService.brokersConfig)
-	testService.OnNewTopicEvent(test)
-	testService.OnNewTopicEvent(secMessage)
-	testService.OnNewTopicEvent(test)
-	log.Print(testService.newTopicToCreate)
-	if testService.newTopicToCreate != "new-test_logs" {
-		t.Error("Error in detecting creating new topic event")
-	}
-}
+// 	var v interface{} = NewAnalyticServices([]string{"localhost:9092"})
+// 	testService := v.(*analyticServices)
+// 	testService.clusterConfig = testService.SetUpConfig()
+// 	testService.topicList = []string{"wow-test_logs"}
+// 	brokerConfig := sarama.NewConfig()
+// 	testService.brokersConfig = *brokerConfig
+// 	testService.client, _ = testService.SetUpClient(&testService.brokersConfig)
+// 	testService.OnNewTopicEvent(test)
+// 	testService.OnNewTopicEvent(secMessage)
+// 	testService.OnNewTopicEvent(test)
+// 	log.Print(testService.newTopicToCreate)
+// 	if testService.newTopicToCreate != "new-test_logs" {
+// 		t.Error("Error in detecting creating new topic event")
+// 	}
+// }

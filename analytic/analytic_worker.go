@@ -72,8 +72,8 @@ func (w *analyticWorker) Start(f ...func(*sarama.ConsumerMessage)) {
 func (w *analyticWorker) startCronJob() {
 	warningInterval := "@every " + os.Getenv("WARNING_TIME_INTERVAL")
 	errorInterval := "@every " + os.Getenv("ERROR_TIME_INTERVAL")
-	w.notificationWorker.AddFunc(warningInterval, func() { w.checkThresholdLimit(WarningFlag, warningThreshold) })
-	w.notificationWorker.AddFunc(errorInterval, func() { w.checkThresholdLimit(ErrorFlag, errorThreshold) })
+	w.notificationWorker.AddFunc(warningInterval, func() { w.thresholdAlerting(WarningFlag, warningThreshold) })
+	w.notificationWorker.AddFunc(errorInterval, func() { w.thresholdAlerting(ErrorFlag, errorThreshold) })
 	w.notificationWorker.Start()
 }
 
@@ -180,19 +180,33 @@ func ConvertMessageToInfluxField(message *sarama.ConsumerMessage, logLabel strin
 	}
 }
 
-func (w *analyticWorker) checkThresholdLimit(flag string, threshold int) {
+func (w *analyticWorker) checkThresholdLimit(flagValue, trafficValue, threshold int) bool {
+	anomalyPercentage := 0
+
+	if flagValue+trafficValue >= minimumDataThreshold {
+		if trafficValue > 0 {
+			anomalyPercentage = (flagValue / trafficValue) * 100
+		} else {
+			anomalyPercentage = flagValue
+		}
+
+		if anomalyPercentage >= threshold {
+			return true
+		}
+	}
+	return false
+}
+
+func (w *analyticWorker) thresholdAlerting(flag string, threshold int) {
 	currentTime := time.Now()
 	influxTime := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(),
 		currentTime.Hour(), 0, 0, 0, currentTime.Location())
 	flagValue := w.databaseClient.GetFieldValueIfExist(flag, w.subscribedTopic, influxTime)
 	trafficValue := w.databaseClient.GetFieldValueIfExist(LevelFlag, w.subscribedTopic, influxTime)
 
-	if flagValue+trafficValue >= minimumDataThreshold {
-		anomalyPercentage := ((flagValue / (flagValue + trafficValue)) * 100)
-		if anomalyPercentage >= threshold {
-			log.Infof("SENT %s MAIL NOTIFICATION", flag)
-			w.mailerService.SendMail(flag, w.subscribedTopic)
-		}
+	if w.checkThresholdLimit(flagValue, trafficValue, threshold) {
+		log.Infof("SENDING MAIL %s NOTIFICATION!", flag)
+		w.mailerService.SendMail(flag, w.subscribedTopic)
 	}
 }
 
