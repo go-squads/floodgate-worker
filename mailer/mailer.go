@@ -3,6 +3,7 @@ package mailer
 import (
 	"crypto/tls"
 	"fmt"
+	"io"
 	"net/smtp"
 	"os"
 	"strings"
@@ -16,16 +17,27 @@ const (
 )
 
 type MailerService interface {
-	SendMail(string, string, int, int)
+	SendMail(string, string, int, int) error
 }
 
-// Mock the SMTP Server
-// Make an interface
-// Mail implement Mailer
+type SmtpServerServices interface {
+	connectToServer() (SmtpClientTest, error)
+	writeMail(io.WriteCloser, string) error
+}
+
+type SmtpClientTest interface {
+	Data() (io.WriteCloser, error)
+	Mail(string) error
+	Auth(smtp.Auth) error
+	Rcpt(string) error
+	Quit() error
+}
+
 type mail struct {
-	toIds   []string
-	subject string
-	body    string
+	toIds      []string
+	subject    string
+	body       string
+	smtpServer SmtpServerServices
 }
 
 type smtpServer struct {
@@ -34,14 +46,22 @@ type smtpServer struct {
 }
 
 func NewMailerService() MailerService {
-	return &mail{}
+	newSmtpServer := smtpServer{
+		host: "smtp.gmail.com",
+		port: "465",
+	}
+
+	return &mail{
+		smtpServer: &newSmtpServer,
+		toIds:      []string{"hearthstone0298@gmail.com"},
+	}
 }
 
 func (s *smtpServer) getServerName() string {
 	return s.host + ":" + s.port
 }
 
-func (s *smtpServer) connectToServer() *smtp.Client {
+func (s *smtpServer) connectToServer() (SmtpClientTest, error) {
 	log.Println(s.host)
 	auth := smtp.PlainAuth("", os.Getenv("SENDER_ACC_USERNAME"), os.Getenv("SENDER_ACC_PASSWORD"), s.host)
 	tlsconfig := &tls.Config{
@@ -50,71 +70,86 @@ func (s *smtpServer) connectToServer() *smtp.Client {
 	}
 	conn, err := tls.Dial("tcp", s.getServerName(), tlsconfig)
 	if err != nil {
-		log.Panic(err)
+		return nil, err
 	}
 
 	client, err := smtp.NewClient(conn, s.host)
 	if err != nil {
-		log.Panic(err)
+		return nil, err
 	}
 
 	if err = client.Auth(auth); err != nil {
-		log.Panic(err)
+		return nil, err
 	}
-	return client
+
+	err = client.Mail(os.Getenv("SENDER_ACC_USERNAME"))
+	if err != nil {
+		log.Error(err)
+		return nil, err
+	}
+
+	return client, nil
 }
 
-func (mail *mail) buildHeaderMessage() string {
+func (mail *mail) buildMessage(senderUsername string, logLevel string, topic string, levelValue int, threshold int) string {
 	message := ""
-	message += fmt.Sprintf("From: %s\r\n", os.Getenv("SENDER_ACC_USERNAME"))
+	message += fmt.Sprintf("From: %s\r\n", senderUsername)
 	if len(mail.toIds) > 0 {
 		message += fmt.Sprintf("To: %s\r\n", strings.Join(mail.toIds, ";"))
 	}
 
-	message += fmt.Sprintf("Subject: %s\r\n", mail.subject)
-	message += "\r\n" + mail.body
+	subject := fmt.Sprintf(messageHeader, logLevel, topic)
+	body := fmt.Sprintf(messageBody, logLevel, topic, levelValue, threshold)
+
+	message += fmt.Sprintf("Subject: %s\r\n", subject)
+	message += "\r\n" + body
 
 	return message
 }
 
-func (mail *mail) buildMessageContent(logLevel string, topic string, levelValue int, threshold int) {
-	mail.subject = fmt.Sprintf(messageHeader, logLevel, topic)
-	mail.body = fmt.Sprintf(messageBody, logLevel, topic, levelValue, threshold)
-}
-
-func (mail *mail) SendMail(level string, topic string, levelValue int, threshold int) {
-	smtpServer := smtpServer{host: "smtp.gmail.com", port: "465"}
-	mail.toIds = []string{"hearthstone0298@gmail.com"}
-	mail.buildMessageContent(level, topic, levelValue, threshold)
-
-	client := smtpServer.connectToServer()
-
-	err := client.Mail(os.Getenv("SENDER_ACC_USERNAME"))
+func (mail *mail) SendMail(level string, topic string, levelValue int, threshold int) error {
+	client, err := mail.smtpServer.connectToServer()
 	if err != nil {
-		log.Panic(err)
+		log.Error(err)
+		return err
 	}
 
 	for _, k := range mail.toIds {
 		if err = client.Rcpt(k); err != nil {
-			log.Panic(err)
+			log.Error(err)
+			return err
 		}
 	}
 
 	w, err := client.Data()
 	if err != nil {
-		log.Panic(err)
+		log.Error(err)
+		return err
 	}
 
-	messageHeader := mail.buildHeaderMessage()
-	_, err = w.Write([]byte(messageHeader))
+	message := mail.buildMessage(os.Getenv("SENDER_ACC_USERNAME"), level, topic, levelValue, threshold)
+	err = mail.smtpServer.writeMail(w, message)
 	if err != nil {
-		log.Panic(err)
+		return err
+	}
+
+	client.Quit()
+	log.Info("Mail sent successfully")
+	return nil
+}
+
+func (s *smtpServer) writeMail(w io.WriteCloser, message string) error {
+	_, err := w.Write([]byte(message))
+	if err != nil {
+		log.Error(err)
+		return err
 	}
 
 	err = w.Close()
 	if err != nil {
-		log.Panic(err)
+		log.Error(err)
+		return err
 	}
-	client.Quit()
-	log.Info("Mail sent successfully")
+
+	return nil
 }
