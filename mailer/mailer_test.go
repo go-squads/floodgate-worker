@@ -68,8 +68,9 @@ func TestIfMailSentCorrectly(t *testing.T) {
 		log.Fatal("Error loading .env file")
 	}
 
+	senderUsername := os.Getenv("SENDER_ACC_USERNAME")
 	wantMessage := ""
-	wantMessage += fmt.Sprintf("From: gosquad20@gmail.com\r\n")
+	wantMessage += fmt.Sprintf("From: %s\r\n", senderUsername)
 	wantMessage += fmt.Sprintf("To: recipientMail\r\n")
 	wantMessage += fmt.Sprintf("Subject: INFO for test_topic\r\n")
 	wantMessage += fmt.Sprintf("\r\nNumber of INFO logs for topic: test_topic, has reached 50. Subsequently, it exceeded the threshold limit of 40.\nPlease check the related application")
