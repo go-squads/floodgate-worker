@@ -146,9 +146,9 @@ func (w *analyticWorker) getLogLabel(message map[string]interface{}) (string, bo
 	}
 
 	for _, label := range keys {
-		logLabel, exist := w.logMap[label]
+		_, exist := w.logMap[label]
 		if exist && w.logMap[label] == LevelFlag {
-			return logLabel, true
+			return label, true
 		}
 	}
 	return "", false
