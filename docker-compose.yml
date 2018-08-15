@@ -2,8 +2,11 @@ version: '3'
 services:
   db:
     image: influxdb:1.6-alpine
-
-  go-server:
+    ports: 
+      - 8086:8086
+    volumes:
+      - ./tmp/influxdb:/var/lib/influxdb
+  worker:
     build: .
     volumes:
       - .:/go/src/github.com/go-squads/floodgate-worker
@@ -12,8 +15,11 @@ services:
     env_file: .env
     links:
       - db
-  kafka:
-    image: spotify/kafka
+  chronograf:
+    image: chronograf:1.6-alpine
+    volumes:
+      - ./tmp/chronograf:/var/lib/chronograf
+    links:
+      - db
     ports:
-      - 9092:9092
-      - 2181:2181
+      - 8888:8888
