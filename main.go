@@ -2,19 +2,22 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"strings"
+	"time"
 
 	"github.com/go-squads/floodgate-worker/analytic"
+	"github.com/go-squads/floodgate-worker/logger"
+	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
 
 var stopSig = make(chan os.Signal)
 
 func main() {
-
+	analytic.LoadEnviromentConfig()
+	logger.SetLevel(os.Getenv("LOG_LEVEL"))
 	app := cli.App{
 		Name:    "analyser-services",
 		Usage:   "Provide kafka producer or consumer for Barito project",
@@ -38,17 +41,16 @@ func main() {
 }
 
 func ActionAnalyserService(cli *cli.Context) {
-	analytic.LoadEnviromentConfig()
 	var brokers []string
 	for _, address := range strings.Split(os.Getenv("BROKERS_ADDRESS"), ",") {
-		fmt.Println(address)
+		log.Debug("Brokers Address: ", address)
 		brokers = append(brokers, address)
 	}
 
 	analyticService := analytic.NewAnalyticServices(brokers)
 	err := analyticService.Start()
 	if err != nil {
-		log.Fatal("Failed to start")
+		log.Fatal("Failed to start analytics service")
 	}
 
 	for {
@@ -56,7 +58,8 @@ func ActionAnalyserService(cli *cli.Context) {
 		case <-stopSig:
 			fmt.Println("Gracefully shutting down..")
 			analyticService.Close()
-			os.Exit(1)
+			time.Sleep(3 * time.Second)
+			os.Exit(0)
 		}
 	}
 }
