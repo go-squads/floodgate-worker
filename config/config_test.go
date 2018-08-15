@@ -1,4 +1,4 @@
-package analytic
+package config
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 )
 
 func TestIfLogLevelsMappedRight(t *testing.T) {
-	testMap := configLogLevelMapping()
+	testMap := LogLevelMapping()
 	assert.Equal(t, ErrorFlag, testMap["FATAL"], "It should result in ERROR flag")
 	assert.Equal(t, InfoFlag, testMap["INFO"], "Info should be equal")
 	assert.Equal(t, WarningFlag, testMap["WARN"], "Warning flag should be the same")

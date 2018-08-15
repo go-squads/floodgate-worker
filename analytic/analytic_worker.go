@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	config "github.com/go-squads/floodgate-worker/config"
 	influx "github.com/go-squads/floodgate-worker/influxdb-handler"
 	"github.com/go-squads/floodgate-worker/mailer"
 	log "github.com/sirupsen/logrus"
@@ -72,8 +73,8 @@ func (w *analyticWorker) Start(f ...func(*sarama.ConsumerMessage)) {
 func (w *analyticWorker) startCronJob() {
 	warningInterval := "@every " + os.Getenv("WARNING_TIME_INTERVAL")
 	errorInterval := "@every " + os.Getenv("ERROR_TIME_INTERVAL")
-	w.notificationWorker.AddFunc(warningInterval, func() { w.thresholdAlerting(WarningFlag, warningThreshold) })
-	w.notificationWorker.AddFunc(errorInterval, func() { w.thresholdAlerting(ErrorFlag, errorThreshold) })
+	w.notificationWorker.AddFunc(warningInterval, func() { w.thresholdAlerting(config.WarningFlag, config.GetWarningThreshold()) })
+	w.notificationWorker.AddFunc(errorInterval, func() { w.thresholdAlerting(config.ErrorFlag, config.GetErrorThreshold()) })
 	w.notificationWorker.Start()
 }
 
@@ -114,7 +115,7 @@ func (w *analyticWorker) storeMessageToDB(message *sarama.ConsumerMessage) {
 		timeToParse.Hour(), 0, 0, 0, timeToParse.Location())
 	logLevelLabel, exist := w.getLogLabel(messageVal)
 	if !exist {
-		w.databaseClient.InsertToInflux(message.Topic, UnknownFlag, 1, roundedTime)
+		w.databaseClient.InsertToInflux(message.Topic, config.UnknownFlag, 1, roundedTime)
 	} else {
 		value := fmt.Sprint(messageVal[logLevelLabel])
 		w.parseAndStoreLogLevel(logLevelLabel, value, message, roundedTime)
@@ -124,14 +125,14 @@ func (w *analyticWorker) storeMessageToDB(message *sarama.ConsumerMessage) {
 
 func (w *analyticWorker) parseAndStoreLogLevel(logLevelLabel string, logLevelValue string, message *sarama.ConsumerMessage, messageTime time.Time) {
 	_, exist := w.logMap[logLevelValue]
-	if !exist || w.logMap[logLevelValue] == LevelFlag {
-		w.databaseClient.InsertToInflux(message.Topic, UnknownFlag, 1, messageTime)
+	if !exist || w.logMap[logLevelValue] == config.LevelFlag {
+		w.databaseClient.InsertToInflux(message.Topic, config.UnknownFlag, 1, messageTime)
 		return
 	}
 
 	w.databaseClient.InsertToInflux(message.Topic, w.logMap[logLevelValue], 1, messageTime)
 
-	if w.logMap[logLevelValue] == ErrorFlag {
+	if w.logMap[logLevelValue] == config.ErrorFlag {
 		methodColumnName, incValue := ConvertMessageToInfluxField(message, logLevelLabel)
 		topicErrorName := message.Topic + "_Errors"
 		w.databaseClient.InsertToInflux(topicErrorName, methodColumnName, incValue, messageTime)
@@ -147,7 +148,7 @@ func (w *analyticWorker) getLogLabel(message map[string]interface{}) (string, bo
 
 	for _, label := range keys {
 		_, exist := w.logMap[label]
-		if exist && w.logMap[label] == LevelFlag {
+		if exist && w.logMap[label] == config.LevelFlag {
 			return label, true
 		}
 	}
@@ -183,7 +184,7 @@ func ConvertMessageToInfluxField(message *sarama.ConsumerMessage, logLabel strin
 func (w *analyticWorker) checkThresholdLimit(flagValue, trafficValue, threshold int) bool {
 	anomalyPercentage := 0
 
-	if flagValue+trafficValue >= minimumDataThreshold {
+	if flagValue+trafficValue >= config.GetMinimumDataThreshold() {
 		if trafficValue > 0 {
 			anomalyPercentage = (flagValue / trafficValue) * 100
 		} else {
@@ -202,7 +203,7 @@ func (w *analyticWorker) thresholdAlerting(flag string, threshold int) {
 	influxTime := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(),
 		currentTime.Hour(), 0, 0, 0, currentTime.Location())
 	flagValue := w.databaseClient.GetFieldValueIfExist(flag, w.subscribedTopic, influxTime)
-	trafficValue := w.databaseClient.GetFieldValueIfExist(LevelFlag, w.subscribedTopic, influxTime)
+	trafficValue := w.databaseClient.GetFieldValueIfExist(config.LevelFlag, w.subscribedTopic, influxTime)
 
 	if w.checkThresholdLimit(flagValue, trafficValue, threshold) {
 		log.Infof("SENDING MAIL %s NOTIFICATION!", flag)

@@ -5,9 +5,9 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	"time"
 
 	"github.com/go-squads/floodgate-worker/analytic"
+	"github.com/go-squads/floodgate-worker/config"
 	"github.com/go-squads/floodgate-worker/logger"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -16,7 +16,7 @@ import (
 var stopSig = make(chan os.Signal)
 
 func main() {
-	analytic.LoadEnviromentConfig()
+	config.LoadEnviromentConfig()
 	logger.SetLevel(os.Getenv("LOG_LEVEL"))
 	app := cli.App{
 		Name:    "analyser-services",
@@ -58,7 +58,6 @@ func ActionAnalyserService(cli *cli.Context) {
 		case <-stopSig:
 			fmt.Println("Gracefully shutting down..")
 			analyticService.Close()
-			time.Sleep(3 * time.Second)
 			os.Exit(0)
 		}
 	}

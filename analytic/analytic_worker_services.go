@@ -7,6 +7,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	cluster "github.com/bsm/sarama-cluster"
+	"github.com/go-squads/floodgate-worker/config"
 	influx "github.com/go-squads/floodgate-worker/influxdb-handler"
 	log "github.com/sirupsen/logrus"
 )
@@ -81,7 +82,7 @@ func NewAnalyticServices(brokers []string) AnalyserServices {
 		workerList:        make(map[string]AnalyticWorker),
 		database:          connectToInflux(),
 		newTopicEventName: newTopicEventTopic,
-		errorMap:          configLogLevelMapping(),
+		errorMap:          config.LogLevelMapping(),
 	}
 }
 

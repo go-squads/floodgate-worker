@@ -1,4 +1,4 @@
-package analytic
+package config
 
 import (
 	"os"
@@ -27,7 +27,19 @@ var (
 	minimumDataThreshold = defaultMinimumDataThreshold
 )
 
-func configLogLevelMapping() map[string]string {
+func GetErrorThreshold() int {
+	return errorThreshold
+}
+
+func GetWarningThreshold() int {
+	return warningThreshold
+}
+
+func GetMinimumDataThreshold() int {
+	return minimumDataThreshold
+}
+
+func LogLevelMapping() map[string]string {
 	LoadEnviromentConfig()
 
 	var logMap = make(map[string]string)

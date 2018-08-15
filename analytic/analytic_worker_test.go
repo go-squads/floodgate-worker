@@ -9,9 +9,9 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/golang/mock/gomock"
 
+	config "github.com/go-squads/floodgate-worker/config"
 	models "github.com/go-squads/floodgate-worker/influxdb-handler"
 	mock "github.com/go-squads/floodgate-worker/mock"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -39,7 +39,7 @@ func TestAnalyticWorker(t *testing.T) {
 	influxDB := models.NewInfluxService(8086, "localhost", "analyticsdbtest", "gopayadmin", "gopayadmin")
 	influxDB.InitDB()
 
-	worker := NewAnalyticWorker(consumer, influxDB, configLogLevelMapping(), "analytic-test")
+	worker := NewAnalyticWorker(consumer, influxDB, config.LogLevelMapping(), "analytic-test")
 
 	var got *sarama.ConsumerMessage
 
@@ -77,7 +77,7 @@ func TestAnalyticWorkerZeroParam_ErrorBadkafka(t *testing.T) {
 	influxDB := models.NewInfluxService(8086, "localhost", "analyticsdbtest", "gopayadmin", "gopayadmin")
 	influxDB.InitDB()
 
-	worker := NewAnalyticWorker(consumer, influxDB, configLogLevelMapping(), "analytic-test")
+	worker := NewAnalyticWorker(consumer, influxDB, config.LogLevelMapping(), "analytic-test")
 
 	var got *sarama.ConsumerMessage
 	worker.OnSuccess(func(message *sarama.ConsumerMessage) { got = message })
@@ -140,7 +140,7 @@ func sampleMsg(message ...*sarama.ConsumerMessage) <-chan *sarama.ConsumerMessag
 }
 
 func TestExtractCorrectLogLabel(t *testing.T) {
-	worker := NewAnalyticWorker(nil, nil, configLogLevelMapping(), "analytic-test")
+	worker := NewAnalyticWorker(nil, nil, config.LogLevelMapping(), "analytic-test")
 	var testMap = make(map[string]interface{})
 	testMap["LOG_LEVEL"] = "ERROR"
 	result, exist := worker.getLogLabel(testMap)
@@ -150,7 +150,7 @@ func TestExtractCorrectLogLabel(t *testing.T) {
 }
 
 func TestIfInvalidLogLabel(t *testing.T) {
-	worker := NewAnalyticWorker(nil, nil, configLogLevelMapping(), "analytic-test")
+	worker := NewAnalyticWorker(nil, nil, config.LogLevelMapping(), "analytic-test")
 	var testMap = make(map[string]interface{})
 	testMap["ERROR"] = "ERROR"
 	result, exist := worker.getLogLabel(testMap)
