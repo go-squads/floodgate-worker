@@ -99,7 +99,7 @@ func (w *analyticWorker) consumeMessage() {
 			}
 		case <-w.signalToStop:
 			w.isRunning = false
-			log.Info("Stopped")
+			log.Infof("Stopped worker with %v topic", w.subscribedTopic)
 			return
 		}
 	}
