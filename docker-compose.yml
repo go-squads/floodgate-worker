@@ -1,0 +1,19 @@
+version: '3'
+services:
+  db:
+    image: influxdb:1.6-alpine
+
+  go-server:
+    build: .
+    volumes:
+      - .:/go/src/github.com/go-squads/floodgate-worker
+    depends_on:
+      - db
+    env_file: .env
+    links:
+      - db
+  kafka:
+    image: spotify/kafka
+    ports:
+      - 9092:9092
+      - 2181:2181

@@ -14,3 +14,4 @@ vendor/
 glide.lock
 .env
 floodgate-worker
+tmp/
