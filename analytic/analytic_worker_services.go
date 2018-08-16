@@ -2,13 +2,12 @@ package analytic
 
 import (
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/Shopify/sarama"
 	cluster "github.com/bsm/sarama-cluster"
 	"github.com/go-squads/floodgate-worker/config"
-	influx "github.com/go-squads/floodgate-worker/influxdb-handler"
+	"github.com/go-squads/floodgate-worker/mongo"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -27,7 +26,7 @@ type analyticServices struct {
 	workerList map[string]AnalyticWorker
 	errorMap   map[string]string
 
-	database      influx.InfluxDB
+	database      mongo.Connector
 	clusterConfig cluster.Config
 	client        sarama.Client
 	brokersConfig sarama.Config
@@ -76,23 +75,18 @@ func (a *analyticServices) SetBrokerAndTopics() error {
 
 func NewAnalyticServices(brokers []string) AnalyserServices {
 	newTopicEventTopic := os.Getenv("NEW_TOPIC_EVENT")
+	db, err := mongo.New("mongodb://localhost:27017", "floodgate-worker")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return &analyticServices{
 		brokers:           brokers,
 		workerList:        make(map[string]AnalyticWorker),
-		database:          connectToInflux(),
+		database:          db,
 		newTopicEventName: newTopicEventTopic,
 		errorMap:          config.LogLevelMapping(),
 	}
-}
-
-func connectToInflux() influx.InfluxDB {
-	influxPort, _ := strconv.Atoi(os.Getenv("INFLUX_PORT"))
-	influxHost := os.Getenv("INFLUX_HOST")
-	influxDbName := os.Getenv("INFLUX_DB")
-	influxUsername := os.Getenv("INFLUX_USERNAME")
-	influxPassword := os.Getenv("INFLUX_PASSWORD")
-	return influx.NewInfluxService(influxPort, influxHost, influxDbName, influxUsername, influxPassword)
 }
 
 func (a *analyticServices) spawnNewAnalyser(topic string, initialOffset int64) error {
@@ -102,7 +96,7 @@ func (a *analyticServices) spawnNewAnalyser(topic string, initialOffset int64) e
 	if err != nil {
 		log.Error("Cluster consumer analyser creation failure")
 	}
-	worker := NewAnalyticWorker(analyserCluster, a.database, a.errorMap, topic)
+	worker := NewAnalyticWorker(analyserCluster, a.database.GetCollection(topic), a.errorMap, topic)
 	a.workerList[topic] = worker
 	log.Info("Spawned worker for " + topic)
 	return err
@@ -129,7 +123,6 @@ func (a *analyticServices) Start() error {
 		return err
 	}
 	a.isClosed = false
-	err = a.database.InitDB()
 	if err != nil {
 		return err
 	}
@@ -157,7 +150,7 @@ func (a *analyticServices) spawnTopicRefresher() error {
 		log.Error("Failed to create a topic refresher")
 	}
 
-	topicRefresher := NewAnalyticWorker(refresherCluster, a.database, a.errorMap, os.Getenv("NEW_TOPIC_EVENT"))
+	topicRefresher := NewAnalyticWorker(refresherCluster, a.database.GetCollection(os.Getenv("NEW_TOPIC_EVENT")), a.errorMap, os.Getenv("NEW_TOPIC_EVENT"))
 	log.Info("Spawned a topic refresher")
 	topicRefresher.Start(a.OnNewTopicEvent)
 	return err

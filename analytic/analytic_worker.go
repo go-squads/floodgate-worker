@@ -3,16 +3,11 @@ package analytic
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"sort"
-	"time"
 
 	"github.com/Shopify/sarama"
-	config "github.com/go-squads/floodgate-worker/config"
-	influx "github.com/go-squads/floodgate-worker/influxdb-handler"
 	"github.com/go-squads/floodgate-worker/mailer"
+	"github.com/go-squads/floodgate-worker/mongo"
 	log "github.com/sirupsen/logrus"
-	cron "gopkg.in/robfig/cron.v2"
 )
 
 type AnalyticWorker interface {
@@ -21,28 +16,35 @@ type AnalyticWorker interface {
 	OnSuccess(f func(*sarama.ConsumerMessage))
 }
 
-type analyticWorker struct {
-	consumer           ClusterAnalyser
-	signalToStop       chan int
-	onSuccessFunc      func(*sarama.ConsumerMessage)
-	refreshTopics      func()
-	databaseClient     influx.InfluxDB
-	isRunning          bool
-	logMap             map[string]string
-	subscribedTopic    string
-	notificationWorker *cron.Cron
-	mailerService      mailer.MailerService
+type incomingLog struct {
+	lvl    string
+	method string
+	path   string
+	code   string
 }
 
-func NewAnalyticWorker(consumer ClusterAnalyser, databaseCon influx.InfluxDB, errorMap map[string]string, topic string) *analyticWorker {
+type analyticWorker struct {
+	consumer        ClusterAnalyser
+	signalToStop    chan int
+	onSuccessFunc   func(*sarama.ConsumerMessage)
+	refreshTopics   func()
+	databaseClient  mongo.Collection
+	isRunning       bool
+	logMap          map[string]string
+	subscribedTopic string
+	mailerService   mailer.MailerService
+}
+
+var logCount map[incomingLog]int
+
+func NewAnalyticWorker(consumer ClusterAnalyser, databaseCon mongo.Collection, errorMap map[string]string, topic string) *analyticWorker {
 	return &analyticWorker{
-		consumer:           consumer,
-		signalToStop:       make(chan int),
-		databaseClient:     databaseCon,
-		logMap:             errorMap,
-		subscribedTopic:    topic,
-		notificationWorker: cron.New(),
-		mailerService:      mailer.NewMailerService(),
+		consumer:        consumer,
+		signalToStop:    make(chan int),
+		databaseClient:  databaseCon,
+		logMap:          errorMap,
+		subscribedTopic: topic,
+		mailerService:   mailer.NewMailerService(),
 	}
 }
 
@@ -51,7 +53,7 @@ func (w *analyticWorker) OnSuccess(f func(*sarama.ConsumerMessage)) {
 }
 
 func (w *analyticWorker) successReadMessage(message *sarama.ConsumerMessage) {
-	fmt.Fprintf(os.Stdout, "\nTopic: %s, Partition: %d, Offset: %d, Key: %s, MessageVal: %s,\n",
+	log.Infof("\nTopic: %s, Partition: %d, Offset: %d, Key: %s, MessageVal: %s,\n",
 		message.Topic, message.Partition, message.Offset, message.Key, message.Value)
 	if w.onSuccessFunc != nil {
 		w.onSuccessFunc(message)
@@ -59,23 +61,15 @@ func (w *analyticWorker) successReadMessage(message *sarama.ConsumerMessage) {
 }
 
 func (w *analyticWorker) Start(f ...func(*sarama.ConsumerMessage)) {
+	logCount = make(map[incomingLog]int)
 	if f != nil {
 		w.OnSuccess(f[0])
 	} else {
-		w.OnSuccess(w.storeMessageToDB)
+		w.OnSuccess(w.onNewMessage)
 	}
 
 	w.isRunning = true
 	go w.consumeMessage()
-	go w.startCronJob()
-}
-
-func (w *analyticWorker) startCronJob() {
-	warningInterval := "@every " + os.Getenv("WARNING_TIME_INTERVAL")
-	errorInterval := "@every " + os.Getenv("ERROR_TIME_INTERVAL")
-	w.notificationWorker.AddFunc(warningInterval, func() { w.thresholdAlerting(config.WarningFlag, config.GetWarningThreshold()) })
-	w.notificationWorker.AddFunc(errorInterval, func() { w.thresholdAlerting(config.ErrorFlag, config.GetErrorThreshold()) })
-	w.notificationWorker.Start()
 }
 
 func (w *analyticWorker) Stop() {
@@ -86,8 +80,6 @@ func (w *analyticWorker) Stop() {
 	go func() {
 		w.signalToStop <- 1
 	}()
-
-	w.notificationWorker.Stop()
 }
 
 func (w *analyticWorker) consumeMessage() {
@@ -106,109 +98,18 @@ func (w *analyticWorker) consumeMessage() {
 	}
 }
 
-func (w *analyticWorker) storeMessageToDB(message *sarama.ConsumerMessage) {
+func (w *analyticWorker) onNewMessage(message *sarama.ConsumerMessage) {
 	messageVal := make(map[string]interface{})
 	_ = json.Unmarshal(message.Value, &messageVal)
-
-	timeToParse, _ := time.Parse(os.Getenv("TIME_LAYOUT"), fmt.Sprint(messageVal["@timestamp"]))
-	roundedTime := time.Date(timeToParse.Year(), timeToParse.Month(), timeToParse.Day(),
-		timeToParse.Hour(), 0, 0, 0, timeToParse.Location())
-	logLevelLabel, exist := w.getLogLabel(messageVal)
-	if !exist {
-		w.databaseClient.InsertToInflux(message.Topic, config.UnknownFlag, 1, roundedTime)
-	} else {
-		value := fmt.Sprint(messageVal[logLevelLabel])
-		w.parseAndStoreLogLevel(logLevelLabel, value, message, roundedTime)
+	log.Debugf("storeMessageToDB: %v", messageVal)
+	data := incomingLog{
+		lvl:    fmt.Sprint(messageVal["lvl"]),
+		method: fmt.Sprint(messageVal["method"]),
+		path:   fmt.Sprint(messageVal["path"]),
+		code:   fmt.Sprint(messageVal["code"]),
 	}
-	return
-}
-
-func (w *analyticWorker) parseAndStoreLogLevel(logLevelLabel string, logLevelValue string, message *sarama.ConsumerMessage, messageTime time.Time) {
-	_, exist := w.logMap[logLevelValue]
-	if !exist || w.logMap[logLevelValue] == config.LevelFlag {
-		w.databaseClient.InsertToInflux(message.Topic, config.UnknownFlag, 1, messageTime)
-		return
-	}
-
-	w.databaseClient.InsertToInflux(message.Topic, w.logMap[logLevelValue], 1, messageTime)
-
-	if w.logMap[logLevelValue] == config.ErrorFlag {
-		methodColumnName, incValue := ConvertMessageToInfluxField(message, logLevelLabel)
-		topicErrorName := message.Topic + "_Errors"
-		w.databaseClient.InsertToInflux(topicErrorName, methodColumnName, incValue, messageTime)
-	}
-	return
-}
-
-func (w *analyticWorker) getLogLabel(message map[string]interface{}) (string, bool) {
-	keys := make([]string, len(message))
-	for k := range message {
-		keys = append(keys, k)
-	}
-
-	for _, label := range keys {
-		_, exist := w.logMap[label]
-		if exist && w.logMap[label] == config.LevelFlag {
-			return label, true
-		}
-	}
-	return "", false
-}
-
-// Use when log levels = Error
-func ConvertMessageToInfluxField(message *sarama.ConsumerMessage, logLabel string) (string, int) {
-	messageVal := make(map[string]interface{})
-	_ = json.Unmarshal(message.Value, &messageVal)
-
-	delete(messageVal, logLabel)
-	delete(messageVal, "@timestamp")
-	delete(messageVal, "_ctx")
-	var listOfValues []string
-	for _, v := range messageVal {
-		listOfValues = append(listOfValues, fmt.Sprint(v))
-	}
-
-	sort.Strings(listOfValues)
-	var columnName string
-	for _, v := range listOfValues {
-		columnName += "_" + v
-	}
-
-	if len(columnName) > 0 {
-		return columnName[1:len(columnName)], 1
-	} else {
-		return "", 0
-	}
-}
-
-func (w *analyticWorker) checkThresholdLimit(flagValue, trafficValue, threshold int) bool {
-	anomalyPercentage := 0
-
-	if flagValue+trafficValue >= config.GetMinimumDataThreshold() {
-		if trafficValue > 0 {
-			anomalyPercentage = (flagValue / trafficValue) * 100
-		} else {
-			anomalyPercentage = flagValue
-		}
-
-		if anomalyPercentage >= threshold {
-			return true
-		}
-	}
-	return false
-}
-
-func (w *analyticWorker) thresholdAlerting(flag string, threshold int) {
-	currentTime := time.Now()
-	influxTime := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(),
-		currentTime.Hour(), 0, 0, 0, currentTime.Location())
-	flagValue := w.databaseClient.GetFieldValueIfExist(flag, w.subscribedTopic, influxTime)
-	trafficValue := w.databaseClient.GetFieldValueIfExist(config.LevelFlag, w.subscribedTopic, influxTime)
-
-	if w.checkThresholdLimit(flagValue, trafficValue, threshold) {
-		log.Infof("SENDING MAIL %s NOTIFICATION!", flag)
-		w.mailerService.SendMail(flag, w.subscribedTopic, flagValue, threshold)
-	}
+	logCount[data]++
+	log.Debugf("%v: %v", data, logCount[data])
 }
 
 func (w *analyticWorker) checkIfRunning() bool {

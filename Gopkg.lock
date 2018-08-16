@@ -3,158 +3,190 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/BaritoLog/go-boilerplate"
-  packages = ["timekit"]
-  revision = "20c4c30023960bc27eb5e4662207a0bcaae04f11"
-
-[[projects]]
-  branch = "master"
+  digest = "1:d4da592130557d4d5cd31f333ea72dd832a74636aac5e06d4a2f89d8297abf6a"
   name = "github.com/Shopify/sarama"
   packages = ["."]
+  pruneopts = "UT"
   revision = "e7238b119b7daab993720f0153eafb88e2b0ac1f"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/bouk/monkey"
-  packages = ["."]
-  revision = "5df1f207ff77e025801505ae4d903133a0b4353f"
-
-[[projects]]
+  digest = "1:49ffc562c9d596c4df96800ad866ab0d5b1db770812f781d0528fbb3f9c96267"
   name = "github.com/bsm/sarama-cluster"
   packages = ["."]
+  pruneopts = "UT"
   revision = "ccdc0803695fbce22f1706d04ded46cd518fd832"
   version = "v2.1.8"
 
 [[projects]]
   branch = "master"
+  digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
+  pruneopts = "UT"
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
 
 [[projects]]
+  digest = "1:1f0c7ab489b407a7f8f9ad16c25a504d28ab461517a971d341388a56156c1bd7"
   name = "github.com/eapache/go-resiliency"
   packages = ["breaker"]
+  pruneopts = "UT"
   revision = "ea41b0fad31007accc7f806884dcdf3da98b79ce"
   version = "v1.1.0"
 
 [[projects]]
   branch = "master"
+  digest = "1:9fa68d8176d6ba6852aefd812d7adbffcda6f285cb46d8e43970a009f179e323"
   name = "github.com/eapache/go-xerial-snappy"
   packages = ["."]
+  pruneopts = "UT"
   revision = "2b4bcfdd67a0b5a9b59fcbf9ae42046a575d3811"
 
 [[projects]]
   branch = "master"
+  digest = "1:42b78fd006fab08021f1006fdb781b15494ada3c44c6a0f3fdc9f0f73e6d4b5e"
   name = "github.com/eapache/queue"
   packages = ["."]
+  pruneopts = "UT"
   revision = "093482f3f8ce946c05bcba64badd2c82369e084d"
 
 [[projects]]
   branch = "master"
+  digest = "1:4b08116de0de75c041bb341686f0b139930f26cb84dfdf7641d435548114181d"
   name = "github.com/globalsign/mgo"
   packages = [
     ".",
     "bson",
     "internal/json",
     "internal/sasl",
-    "internal/scram"
+    "internal/scram",
   ]
+  pruneopts = "UT"
   revision = "113d3961e7311526535a1ef7042196563d442761"
 
 [[projects]]
   branch = "master"
+  digest = "1:2e292c0e36117b617c4df3f10ac9a7fe05e3c90bf057f1e61867c913d866e0c9"
   name = "github.com/golang/mock"
   packages = ["gomock"]
+  pruneopts = "UT"
   revision = "5f7a43820b4647d500f43b4ffcf344eaf01bcad5"
 
 [[projects]]
+  digest = "1:06c8168453decb3d6db47d2fcac0f58332a535631fae7e63238e481e827f5258"
   name = "github.com/golang/snappy"
   packages = ["."]
+  pruneopts = "UT"
   revision = "d9eb7a3d35ec988b8585d4a0068e462c27d28380"
 
 [[projects]]
   branch = "master"
+  digest = "1:455d9ae44133485933ebdbecf7cd428fdaea5a45b2df5ef11c57d0e7576802ec"
   name = "github.com/influxdata/influxdb"
   packages = [
     "client/v2",
     "models",
-    "pkg/escape"
+    "pkg/escape",
   ]
+  pruneopts = "UT"
   revision = "ccc4fae0b5f17f6d6c132865ea0200c824da1e1d"
 
 [[projects]]
   branch = "master"
+  digest = "1:d166a4b3543a71d87e34767ace94e8b516e79ba45111730306f07c8d6f797f1f"
   name = "github.com/joho/godotenv"
   packages = ["."]
+  pruneopts = "UT"
   revision = "1709ab122c988931ad53508747b3c061400c2984"
 
 [[projects]]
+  digest = "1:bda7c09ebcf8a9636eb71cd512f886e8fb1447e7cb242e03e9cb8e457fccca3a"
   name = "github.com/pierrec/lz4"
   packages = [
     ".",
-    "internal/xxh32"
+    "internal/xxh32",
   ]
+  pruneopts = "UT"
   revision = "6b9367c9ff401dbc54fabce3fb8d972e799b702d"
   version = "v2.0.2"
 
 [[projects]]
+  digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
+  pruneopts = "UT"
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
   version = "v1.0.0"
 
 [[projects]]
   branch = "master"
+  digest = "1:c4556a44e350b50a490544d9b06e9fba9c286c21d6c0e47f54f3a9214597298c"
   name = "github.com/rcrowley/go-metrics"
   packages = ["."]
+  pruneopts = "UT"
   revision = "e2704e165165ec55d062f5919b4b29494e9fa790"
 
 [[projects]]
+  digest = "1:d867dfa6751c8d7a435821ad3b736310c2ed68945d05b50fb9d23aee0540c8cc"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
+  pruneopts = "UT"
   revision = "3e01752db0189b9157070a0e1668a620f9a85da2"
   version = "v1.0.6"
 
 [[projects]]
+  digest = "1:25f2747b063c0a656195ef85413cef8c9f2bbe128deab7d39563a6ca1e536070"
   name = "github.com/stretchr/testify"
   packages = ["assert"]
+  pruneopts = "UT"
   revision = "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
   version = "v1.1.4"
 
 [[projects]]
   branch = "master"
+  digest = "1:189a0e6e9c657bb662bafc41a796360d11c88eed7614b1b6f003b8fbc8847e5e"
   name = "github.com/urfave/cli"
   packages = ["."]
+  pruneopts = "UT"
   revision = "8e01ec4cd3e2d84ab2fe90d8210528ffbb06d8ff"
 
 [[projects]]
   branch = "master"
+  digest = "1:3f3a05ae0b95893d90b9b3b5afdb79a9b3d96e4e36e099d841ae602e4aca0da8"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
+  pruneopts = "UT"
   revision = "de0752318171da717af4ce24d0a2e8626afaeb11"
 
 [[projects]]
+  digest = "1:76ee51c3f468493aff39dbacc401e8831fbb765104cbf613b89bef01cf4bad70"
   name = "golang.org/x/net"
   packages = ["context"]
+  pruneopts = "UT"
   revision = "92b859f39abd2d91a854c9f9c4621b2f5054a92d"
 
 [[projects]]
+  digest = "1:4209abe00376ffee78479e4cb06a85b71448853c68112320dab63661bd1a4e4b"
   name = "golang.org/x/sys"
   packages = [
     "unix",
-    "windows"
+    "windows",
   ]
+  pruneopts = "UT"
   revision = "d8e400bc7db4870d786864138af681469693d18c"
-
-[[projects]]
-  branch = "v2"
-  name = "gopkg.in/robfig/cron.v2"
-  packages = ["."]
-  revision = "be2e0b0deed5a68ffee390b4583a13aff8321535"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "1f75f558e3d3fcd908b7a2307e54cdf1f8d99e412eeb23fb7fdb8d622fff0a2b"
+  input-imports = [
+    "github.com/Shopify/sarama",
+    "github.com/bsm/sarama-cluster",
+    "github.com/globalsign/mgo",
+    "github.com/golang/mock/gomock",
+    "github.com/influxdata/influxdb/client/v2",
+    "github.com/joho/godotenv",
+    "github.com/sirupsen/logrus",
+    "github.com/stretchr/testify/assert",
+    "github.com/urfave/cli",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
