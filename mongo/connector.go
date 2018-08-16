@@ -11,7 +11,7 @@ type connector struct {
 }
 
 const (
-	collectionName =  "topics"
+	collectionName = "topics"
 )
 
 func New(connectionURL, databaseName string) (Connector, error) {
@@ -19,12 +19,12 @@ func New(connectionURL, databaseName string) (Connector, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &connector{db: session.DB(databaseName)},nil
+	return &connector{db: session.DB(databaseName)}, nil
 }
 
 func (s *connector) GetCollection(name string) Collection {
 	return &collection{
 		collectionName: name,
-		collection: s.db.C(name),
+		collection:     s.db.C(name),
 	}
 }

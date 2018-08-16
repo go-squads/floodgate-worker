@@ -33,7 +33,6 @@ func main() {
 	}
 
 	signal.Notify(stopSig, os.Interrupt)
-
 	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(fmt.Sprintf("Some error occurred: %s", err.Error()))

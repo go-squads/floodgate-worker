@@ -5,9 +5,8 @@ import (
 	"fmt"
 
 	"github.com/Shopify/sarama"
-	"github.com/go-squads/floodgate-worker/mailer"
-	"github.com/go-squads/floodgate-worker/mongo"
-	log "github.com/sirupsen/logrus"
+		log "github.com/sirupsen/logrus"
+	"github.com/go-squads/floodgate-worker/buffer"
 )
 
 type AnalyticWorker interface {
@@ -16,35 +15,23 @@ type AnalyticWorker interface {
 	OnSuccess(f func(*sarama.ConsumerMessage))
 }
 
-type incomingLog struct {
-	lvl    string
-	method string
-	path   string
-	code   string
-}
-
 type analyticWorker struct {
 	consumer        ClusterAnalyser
 	signalToStop    chan int
 	onSuccessFunc   func(*sarama.ConsumerMessage)
 	refreshTopics   func()
-	databaseClient  mongo.Collection
 	isRunning       bool
 	logMap          map[string]string
 	subscribedTopic string
-	mailerService   mailer.MailerService
 }
 
-var logCount map[incomingLog]int
 
-func NewAnalyticWorker(consumer ClusterAnalyser, databaseCon mongo.Collection, errorMap map[string]string, topic string) *analyticWorker {
+func NewAnalyticWorker(consumer ClusterAnalyser, errorMap map[string]string, topic string) *analyticWorker {
 	return &analyticWorker{
 		consumer:        consumer,
 		signalToStop:    make(chan int),
-		databaseClient:  databaseCon,
 		logMap:          errorMap,
 		subscribedTopic: topic,
-		mailerService:   mailer.NewMailerService(),
 	}
 }
 
@@ -61,7 +48,6 @@ func (w *analyticWorker) successReadMessage(message *sarama.ConsumerMessage) {
 }
 
 func (w *analyticWorker) Start(f ...func(*sarama.ConsumerMessage)) {
-	logCount = make(map[incomingLog]int)
 	if f != nil {
 		w.OnSuccess(f[0])
 	} else {
@@ -102,14 +88,13 @@ func (w *analyticWorker) onNewMessage(message *sarama.ConsumerMessage) {
 	messageVal := make(map[string]interface{})
 	_ = json.Unmarshal(message.Value, &messageVal)
 	log.Debugf("storeMessageToDB: %v", messageVal)
-	data := incomingLog{
-		lvl:    fmt.Sprint(messageVal["lvl"]),
-		method: fmt.Sprint(messageVal["method"]),
-		path:   fmt.Sprint(messageVal["path"]),
-		code:   fmt.Sprint(messageVal["code"]),
+	data := buffer.IncomingLog{
+		Level:    fmt.Sprint(messageVal["lvl"]),
+		Method: fmt.Sprint(messageVal["method"]),
+		Path:   fmt.Sprint(messageVal["path"]),
+		Code:   fmt.Sprint(messageVal["code"]),
 	}
-	logCount[data]++
-	log.Debugf("%v: %v", data, logCount[data])
+	buffer.GetBuffer().Add(w.subscribedTopic, data)
 }
 
 func (w *analyticWorker) checkIfRunning() bool {
