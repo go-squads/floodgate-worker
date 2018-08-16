@@ -25,9 +25,6 @@
 #   unused-packages = true
 
 
-[[constraint]]
-  branch = "master"
-  name = "github.com/BaritoLog/go-boilerplate"
 
 [[constraint]]
   branch = "master"
@@ -40,10 +37,6 @@
 [[constraint]]
   branch = "master"
   name = "github.com/golang/mock"
-
-[[constraint]]
-  branch = "master"
-  name = "github.com/influxdata/influxdb"
 
 [[constraint]]
   branch = "master"
@@ -68,7 +61,3 @@
 [prune]
   go-tests = true
   unused-packages = true
-
-[[constraint]]
-  name = "github.com/mongodb/mongo-go-driver"
-  version = "0.0.11"
