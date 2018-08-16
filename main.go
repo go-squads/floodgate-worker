@@ -8,16 +8,16 @@ import (
 
 	"github.com/go-squads/floodgate-worker/analytic"
 	"github.com/go-squads/floodgate-worker/config"
-	"github.com/go-squads/floodgate-worker/logger"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
+	"github.com/go-squads/floodgate-worker/logger"
 )
 
 var stopSig = make(chan os.Signal)
 
 func main() {
 	config.LoadEnviromentConfig()
-	logger.SetLevel(os.Getenv("LOG_LEVEL"))
+	logger.Init()
 	app := cli.App{
 		Name:    "analyser-services",
 		Usage:   "Provide kafka producer or consumer for Barito project",
