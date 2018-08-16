@@ -7,19 +7,17 @@ type Connector interface {
 }
 
 type connector struct {
+	session *mgo.Session
 	db *mgo.Database
 }
-
-const (
-	collectionName = "topics"
-)
 
 func New(connectionURL, databaseName string) (Connector, error) {
 	session, err := mgo.Dial(connectionURL)
 	if err != nil {
 		return nil, err
 	}
-	return &connector{db: session.DB(databaseName)}, nil
+	db := session.DB(databaseName)
+	return &connector{session: session, db: db}, nil
 }
 
 func (s *connector) GetCollection(name string) Collection {
@@ -27,4 +25,8 @@ func (s *connector) GetCollection(name string) Collection {
 		collectionName: name,
 		collection:     s.db.C(name),
 	}
+}
+
+func (s *connector)Close() {
+	s.session.Close()
 }

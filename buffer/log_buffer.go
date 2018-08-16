@@ -4,7 +4,7 @@ import (
 	"time"
 	"github.com/go-squads/floodgate-worker/mongo"
 	"os"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/robfig/cron.v2"
 	"github.com/sirupsen/logrus"
 )
@@ -29,11 +29,13 @@ type Buffer interface {
 	Add(topic string, log IncomingLog)
 	StartCron()
 	Flush()
+	Close()
 }
 
 type buffer struct {
 	buff map[string]map[IncomingLog]int
 	db mongo.Connector
+	cron *cron.Cron
 }
 
 var bufferObj Buffer
@@ -73,7 +75,7 @@ func (s *buffer) Add(topic string, log IncomingLog) {
 }
 
 func (s *buffer)Flush() {
-	log.Println("Flushing data to database")
+	log.Debug("Flushing data to database")
 	for k,v := range s.buff {
 		log.Println("Flushing data",k,v)
 		col := s.db.GetCollection(k)
@@ -86,7 +88,13 @@ func (s *buffer)Flush() {
 }
 
 func (s *buffer)StartCron() {
-	c := cron.New()
-	c.AddFunc("0 * * * * *", s.Flush)
-	c.Start()
+	s.cron = cron.New()
+	s.cron.AddFunc(os.Getenv("CRON_INTERVAL"), s.Flush)
+	s.cron.Start()
+}
+
+
+func (s *buffer)Close() {
+	log.Info("Stopping")
+	s.cron.Stop()
 }

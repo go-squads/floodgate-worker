@@ -31,7 +31,7 @@ type analyticServices struct {
 	clusterConfig cluster.Config
 	client        sarama.Client
 	brokersConfig sarama.Config
-
+	buffer buffer.Buffer
 	newTopicEventName    string
 	newTopicToCreate     string
 	TopicRefresherWorker AnalyticWorker
@@ -77,7 +77,7 @@ func (a *analyticServices) SetBrokerAndTopics() error {
 func NewAnalyticServices(brokers []string) AnalyserServices {
 	newTopicEventTopic := os.Getenv("NEW_TOPIC_EVENT")
 	db, err := mongo.New("mongodb://localhost:27017", "floodgate-worker")
-	buffer.New(db)
+	buffer := buffer.New(db)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -86,6 +86,7 @@ func NewAnalyticServices(brokers []string) AnalyserServices {
 		brokers:           brokers,
 		workerList:        make(map[string]AnalyticWorker),
 		database:          db,
+		buffer:				buffer,
 		newTopicEventName: newTopicEventTopic,
 		errorMap:          config.LogLevelMapping(),
 	}
@@ -184,6 +185,7 @@ func (a *analyticServices) Close() {
 			worker.Stop()
 		}
 	}
+	a.buffer.Close()
 	a.client.Close()
 	return
 }
