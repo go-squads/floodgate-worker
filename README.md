@@ -38,7 +38,7 @@ AnalyticServices creates a Service which will spawn a Consumer group for every t
    3. Unzip it and cd into the kafka directory  
    4. Run the zookeeper with: ```bin/zookeeper-server-start.sh config/zookeeper.properties```    
    5. Run the server with:```bin/kafka-server-start.sh config/server.properties``` (in another terminal window)   
-* Run with: ```go main.go aw``` in the root of the project directory to run the worker (do this in another terminal window)
+* Run with: ```go run main.go aw``` in the root of the project directory to run the worker (do this in another terminal window)
 * Clone barito-flow from [here](https://github.com/BaritoLog/barito-flow)
 * Run the barito-flow producer [instructions](https://github.com/BaritoLog/barito-flow)
 * Send messages to the producer by posting to it  
