@@ -7,7 +7,7 @@
 .vs/
 *.test
 *.html
-
+.idea/
 *.out
 vendor/
 

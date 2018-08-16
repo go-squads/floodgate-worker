@@ -51,6 +51,18 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/globalsign/mgo"
+  packages = [
+    ".",
+    "bson",
+    "internal/json",
+    "internal/sasl",
+    "internal/scram"
+  ]
+  revision = "113d3961e7311526535a1ef7042196563d442761"
+
+[[projects]]
+  branch = "master"
   name = "github.com/golang/mock"
   packages = ["gomock"]
   revision = "5f7a43820b4647d500f43b4ffcf344eaf01bcad5"
@@ -143,6 +155,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "cdbce642b23c4f56fad6535895610ec4078c3448eba116c7c83910b280d9c6be"
+  inputs-digest = "1f75f558e3d3fcd908b7a2307e54cdf1f8d99e412eeb23fb7fdb8d622fff0a2b"
   solver-name = "gps-cdcl"
   solver-version = 1
