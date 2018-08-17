@@ -6,10 +6,11 @@ import (
 
 	"github.com/Shopify/sarama"
 	cluster "github.com/bsm/sarama-cluster"
+	"github.com/go-squads/floodgate-worker/analytic/worker"
+	"github.com/go-squads/floodgate-worker/buffer"
 	"github.com/go-squads/floodgate-worker/config"
 	"github.com/go-squads/floodgate-worker/mongo"
 	log "github.com/sirupsen/logrus"
-	"github.com/go-squads/floodgate-worker/buffer"
 )
 
 type AnalyserServices interface {
@@ -24,17 +25,17 @@ type analyticServices struct {
 	isClosed   bool
 	brokers    []string
 	topicList  []string
-	workerList map[string]AnalyticWorker
+	workerList map[string]worker.AnalyticWorker
 	errorMap   map[string]string
 
-	database      mongo.Connector
-	clusterConfig cluster.Config
-	client        sarama.Client
-	brokersConfig sarama.Config
-	buffer buffer.Buffer
+	database             mongo.Connector
+	clusterConfig        cluster.Config
+	client               sarama.Client
+	brokersConfig        sarama.Config
+	buffer               buffer.Buffer
 	newTopicEventName    string
 	newTopicToCreate     string
-	TopicRefresherWorker AnalyticWorker
+	TopicRefresherWorker worker.AnalyticWorker
 }
 
 func (a *analyticServices) SetUpConfig() cluster.Config {
@@ -84,9 +85,9 @@ func NewAnalyticServices(brokers []string) AnalyserServices {
 
 	return &analyticServices{
 		brokers:           brokers,
-		workerList:        make(map[string]AnalyticWorker),
+		workerList:        make(map[string]worker.AnalyticWorker),
 		database:          db,
-		buffer:				buffer,
+		buffer:            buffer,
 		newTopicEventName: newTopicEventTopic,
 		errorMap:          config.LogLevelMapping(),
 	}
@@ -99,7 +100,7 @@ func (a *analyticServices) spawnNewAnalyser(topic string, initialOffset int64) e
 	if err != nil {
 		log.Error("Cluster consumer analyser creation failure")
 	}
-	worker := NewAnalyticWorker(analyserCluster, a.errorMap, topic)
+	worker := worker.NewAnalyticWorker(analyserCluster, a.errorMap, topic)
 	a.workerList[topic] = worker
 	log.Info("Spawned worker for " + topic)
 	return err
@@ -153,7 +154,7 @@ func (a *analyticServices) spawnTopicRefresher() error {
 		log.Error("Failed to create a topic refresher")
 	}
 
-	topicRefresher := NewAnalyticWorker(refresherCluster, a.errorMap, os.Getenv("NEW_TOPIC_EVENT"))
+	topicRefresher := worker.NewAnalyticWorker(refresherCluster, a.errorMap, os.Getenv("NEW_TOPIC_EVENT"))
 	log.Info("Spawned a topic refresher")
 	topicRefresher.Start(a.OnNewTopicEvent)
 	return err
@@ -194,6 +195,6 @@ func (a *analyticServices) checkIfClosed() bool {
 	return a.isClosed
 }
 
-func (a *analyticServices) showWorkerList() map[string]AnalyticWorker {
+func (a *analyticServices) showWorkerList() map[string]worker.AnalyticWorker {
 	return a.workerList
 }

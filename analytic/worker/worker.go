@@ -1,12 +1,12 @@
-package analytic
+package worker
 
 import (
 	"encoding/json"
 	"fmt"
 
 	"github.com/Shopify/sarama"
-		log "github.com/sirupsen/logrus"
 	"github.com/go-squads/floodgate-worker/buffer"
+	log "github.com/sirupsen/logrus"
 )
 
 type AnalyticWorker interface {
@@ -24,7 +24,6 @@ type analyticWorker struct {
 	logMap          map[string]string
 	subscribedTopic string
 }
-
 
 func NewAnalyticWorker(consumer ClusterAnalyser, errorMap map[string]string, topic string) *analyticWorker {
 	return &analyticWorker{
@@ -89,7 +88,7 @@ func (w *analyticWorker) onNewMessage(message *sarama.ConsumerMessage) {
 	_ = json.Unmarshal(message.Value, &messageVal)
 	log.Debugf("storeMessageToDB: %v", messageVal)
 	data := buffer.IncomingLog{
-		Level:    fmt.Sprint(messageVal["lvl"]),
+		Level:  fmt.Sprint(messageVal["lvl"]),
 		Method: fmt.Sprint(messageVal["method"]),
 		Path:   fmt.Sprint(messageVal["path"]),
 		Code:   fmt.Sprint(messageVal["code"]),

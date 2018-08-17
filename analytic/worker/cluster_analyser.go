@@ -1,4 +1,4 @@
-package analytic
+package worker
 
 import (
 	"github.com/Shopify/sarama"
