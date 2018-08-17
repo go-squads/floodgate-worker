@@ -1,6 +1,9 @@
 package mongo
 
-import "github.com/globalsign/mgo"
+import (
+	"github.com/globalsign/mgo"
+	"github.com/sirupsen/logrus"
+)
 
 type Connector interface {
 	GetCollection(name string) Collection
@@ -8,10 +11,11 @@ type Connector interface {
 
 type connector struct {
 	session *mgo.Session
-	db *mgo.Database
+	db      *mgo.Database
 }
 
 func New(connectionURL, databaseName string) (Connector, error) {
+	logrus.Debugf("Connecting to mongo with: %v %v", connectionURL, databaseName)
 	session, err := mgo.Dial(connectionURL)
 	if err != nil {
 		return nil, err
@@ -27,6 +31,6 @@ func (s *connector) GetCollection(name string) Collection {
 	}
 }
 
-func (s *connector)Close() {
+func (s *connector) Close() {
 	s.session.Close()
 }

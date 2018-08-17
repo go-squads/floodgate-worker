@@ -77,7 +77,7 @@ func (a *analyticServices) SetBrokerAndTopics() error {
 
 func NewAnalyticServices(brokers []string) AnalyserServices {
 	newTopicEventTopic := os.Getenv("NEW_TOPIC_EVENT")
-	db, err := mongo.New("mongodb://localhost:27017", "floodgate-worker")
+	db, err := mongo.New(os.Getenv("MONGO_ADDRESS"), os.Getenv("MONGO_DB_NAME"))
 	buffer := buffer.New(db)
 	if err != nil {
 		log.Fatal(err)
