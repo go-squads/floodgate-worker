@@ -1,12 +1,13 @@
 package buffer
 
 import (
-	"time"
-	"github.com/go-squads/floodgate-worker/mongo"
 	"os"
-	log "github.com/sirupsen/logrus"
-	"gopkg.in/robfig/cron.v2"
+	"time"
+
+	"github.com/go-squads/floodgate-worker/mongo"
 	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
+	cron "gopkg.in/robfig/cron.v2"
 )
 
 type IncomingLog struct {
@@ -17,12 +18,12 @@ type IncomingLog struct {
 }
 
 type StoreLog struct {
-	Level     string    `json:"lvl"`
-	Method    string    `json:"method"`
-	Path      string    `json:"path"`
-	Code      string    `json:"code"`
-	Count     int       `json:"count"`
-	Timestamp string	`json"timestamp"`
+	Level     string `json:"lvl"`
+	Method    string `json:"method"`
+	Path      string `json:"path"`
+	Code      string `json:"code"`
+	Count     int    `json:"count"`
+	Timestamp string `json"timestamp"`
 }
 
 type Buffer interface {
@@ -34,7 +35,7 @@ type Buffer interface {
 
 type buffer struct {
 	buff map[string]map[IncomingLog]int
-	db mongo.Connector
+	db   mongo.Connector
 	cron *cron.Cron
 }
 
@@ -50,11 +51,11 @@ func GetBuffer() Buffer {
 
 func createStoreLog(log IncomingLog, count int) *StoreLog {
 	return &StoreLog{
-		Level: log.Level,
-		Method: log.Method,
-		Path: log.Path,
-		Code: log.Code,
-		Count: count,
+		Level:     log.Level,
+		Method:    log.Method,
+		Path:      log.Path,
+		Code:      log.Code,
+		Count:     count,
 		Timestamp: time.Now().Format(os.Getenv("TIME_LAYOUT")),
 	}
 }
@@ -74,27 +75,26 @@ func (s *buffer) Add(topic string, log IncomingLog) {
 	logrus.Debug("Adding data to buffer", s.buff)
 }
 
-func (s *buffer)Flush() {
+func (s *buffer) Flush() {
 	log.Debug("Flushing data to database")
-	for k,v := range s.buff {
-		log.Println("Flushing data",k,v)
+	for k, v := range s.buff {
+		log.Println("Flushing data", k, v)
 		col := s.db.GetCollection(k)
-		for kk,vv := range v {
-			sl := createStoreLog(kk,vv)
+		for kk, vv := range v {
+			sl := createStoreLog(kk, vv)
 			col.Insert(sl)
 		}
 	}
 	s.buff = make(map[string]map[IncomingLog]int)
 }
 
-func (s *buffer)StartCron() {
+func (s *buffer) StartCron() {
 	s.cron = cron.New()
 	s.cron.AddFunc(os.Getenv("CRON_INTERVAL"), s.Flush)
 	s.cron.Start()
 }
 
-
-func (s *buffer)Close() {
+func (s *buffer) Close() {
 	log.Info("Stopping")
 	s.cron.Stop()
 }
