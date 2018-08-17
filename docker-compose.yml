@@ -1,25 +1,58 @@
 version: '3'
 services:
-  db:
-    image: influxdb:1.6-alpine
-    ports: 
-      - 8086:8086
-    volumes:
-      - ./tmp/influxdb:/var/lib/influxdb
+  mongo:
+    image: mongo:4.0.1
+    restart: always
+    volumes: 
+      - ./tmp/mongo:/data
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - 27017:27017
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    depends_on:
+      - mongo
+    links:
+      - mongo
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+  zookeeper:
+    image: 'bitnami/zookeeper:latest'
+    ports:
+      - '2181:2181'
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  kafka:
+    image: 'bitnami/kafka:1'
+    ports:
+      - 9092:9092
+    depends_on:
+      - zookeeper
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
   worker:
     build: .
     volumes:
       - .:/go/src/github.com/go-squads/floodgate-worker
     depends_on:
-      - db
+      - mongo
+      - kafka
     env_file: .env
     links:
-      - db
-  chronograf:
-    image: chronograf:1.6-alpine
-    volumes:
-      - ./tmp/chronograf:/var/lib/chronograf
-    links:
-      - db
+      - mongo
+      - kafka
+  producer:
+    image: baritolog/barito-flow:latest
+    command: "producer"
+    environment:
+      - BARITO_KAFKA_BROKERS=kafka:9092
     ports:
-      - 8888:8888
+      - 8080:8080
+      
