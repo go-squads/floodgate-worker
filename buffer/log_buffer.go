@@ -77,7 +77,9 @@ func (s *buffer) Add(topic string, log IncomingLog) {
 
 func (s *buffer) Flush() {
 	log.Debug("Flushing data to database")
-	for k, v := range s.buff {
+	toBeFlushed := s.buff
+	s.buff = make(map[string]map[IncomingLog]int)
+	for k, v := range toBeFlushed {
 		log.Println("Flushing data", k, v)
 		col := s.db.GetCollection(k)
 		for kk, vv := range v {
@@ -85,7 +87,6 @@ func (s *buffer) Flush() {
 			col.Insert(sl)
 		}
 	}
-	s.buff = make(map[string]map[IncomingLog]int)
 }
 
 func (s *buffer) StartCron() {
