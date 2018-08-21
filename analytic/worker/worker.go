@@ -88,10 +88,7 @@ func (w *analyticWorker) consumeMessage() {
 func (w *analyticWorker) onNewMessage(message *sarama.ConsumerMessage) {
 	messageVal := make(map[string]interface{})
 	_ = json.Unmarshal(message.Value, &messageVal)
-	timeToParse, _ := time.Parse(os.Getenv("TIME_LAYOUT"), fmt.Sprint(messageVal["@timestamp"]))
-	roundedTime := time.Date(timeToParse.Year(), timeToParse.Month(), timeToParse.Day(),
-		timeToParse.Hour(), timeToParse.Minute(), 0, 0, timeToParse.Location())
-	log.Debugf("Parsed Time: %v, %v", timeToParse, roundedTime)
+	roundedTime := roundTime(messageVal["@timestamp"])
 	data := buffer.IncomingLog{
 		Level:     fmt.Sprint(messageVal["lvl"]),
 		Method:    fmt.Sprint(messageVal["method"]),
@@ -104,4 +101,12 @@ func (w *analyticWorker) onNewMessage(message *sarama.ConsumerMessage) {
 
 func (w *analyticWorker) checkIfRunning() bool {
 	return w.isRunning
+}
+
+func roundTime(timestamp interface{}) time.Time {
+	timeToParse, _ := time.Parse(os.Getenv("TIME_LAYOUT"), fmt.Sprint(timestamp))
+	roundedTime := time.Date(timeToParse.Year(), timeToParse.Month(), timeToParse.Day(),
+		timeToParse.Hour(), timeToParse.Minute(), 0, 0, timeToParse.Location())
+	log.Debugf("Parsed Time: %v, %v", timeToParse, roundedTime)
+	return roundedTime
 }
