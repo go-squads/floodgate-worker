@@ -3,6 +3,8 @@ package worker
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/go-squads/floodgate-worker/buffer"
@@ -86,12 +88,16 @@ func (w *analyticWorker) consumeMessage() {
 func (w *analyticWorker) onNewMessage(message *sarama.ConsumerMessage) {
 	messageVal := make(map[string]interface{})
 	_ = json.Unmarshal(message.Value, &messageVal)
-	log.Debugf("storeMessageToDB: %v", messageVal)
+	timeToParse, _ := time.Parse(os.Getenv("TIME_LAYOUT"), fmt.Sprint(messageVal["@timestamp"]))
+	roundedTime := time.Date(timeToParse.Year(), timeToParse.Month(), timeToParse.Day(),
+		timeToParse.Hour(), timeToParse.Minute(), 0, 0, timeToParse.Location())
+	log.Debugf("Parsed Time: %v, %v", timeToParse, roundedTime)
 	data := buffer.IncomingLog{
-		Level:  fmt.Sprint(messageVal["lvl"]),
-		Method: fmt.Sprint(messageVal["method"]),
-		Path:   fmt.Sprint(messageVal["path"]),
-		Code:   fmt.Sprint(messageVal["code"]),
+		Level:     fmt.Sprint(messageVal["lvl"]),
+		Method:    fmt.Sprint(messageVal["method"]),
+		Path:      fmt.Sprint(messageVal["path"]),
+		Code:      fmt.Sprint(messageVal["code"]),
+		Timestamp: fmt.Sprint(roundedTime),
 	}
 	buffer.GetBuffer().Add(w.subscribedTopic, data)
 }

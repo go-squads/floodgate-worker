@@ -2,7 +2,6 @@ package buffer
 
 import (
 	"os"
-	"time"
 
 	"github.com/go-squads/floodgate-worker/mongo"
 	"github.com/sirupsen/logrus"
@@ -11,10 +10,11 @@ import (
 )
 
 type IncomingLog struct {
-	Level  string
-	Method string
-	Path   string
-	Code   string
+	Level     string
+	Method    string
+	Path      string
+	Code      string
+	Timestamp string
 }
 
 type StoreLog struct {
@@ -56,7 +56,7 @@ func createStoreLog(log IncomingLog, count int) *StoreLog {
 		Path:      log.Path,
 		Code:      log.Code,
 		Count:     count,
-		Timestamp: time.Now().Format(os.Getenv("TIME_LAYOUT")),
+		Timestamp: log.Timestamp,
 	}
 }
 
