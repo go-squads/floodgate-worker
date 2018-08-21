@@ -66,6 +66,7 @@ func (a *analyticServices) SetBrokerAndTopics() error {
 	brokerClient, err := a.SetUpClient(brokerConfig)
 	if err != nil {
 		log.Error("Failed to connect to broker...")
+		return err
 	}
 	topicList, _ := brokerClient.Topics()
 	a.clusterConfig = analyserClusterConfig
@@ -76,18 +77,18 @@ func (a *analyticServices) SetBrokerAndTopics() error {
 }
 
 func NewAnalyticServices(brokers []string) AnalyserServices {
+
 	newTopicEventTopic := os.Getenv("NEW_TOPIC_EVENT")
 	db, err := mongo.New(os.Getenv("MONGO_ADDRESS"), os.Getenv("MONGO_DB_NAME"))
-	buffer := buffer.New(db)
 	if err != nil {
 		log.Fatal(err)
+		os.Exit(1)
 	}
 
 	return &analyticServices{
 		brokers:           brokers,
 		workerList:        make(map[string]worker.AnalyticWorker),
 		database:          db,
-		buffer:            buffer,
 		newTopicEventName: newTopicEventTopic,
 		errorMap:          config.LogLevelMapping(),
 	}
@@ -143,6 +144,7 @@ func (a *analyticServices) Start() error {
 			worker.Start()
 		}
 	}
+	a.buffer = buffer.New(a.database)
 
 	return err
 }
