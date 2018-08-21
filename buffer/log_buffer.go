@@ -23,7 +23,7 @@ type StoreLog struct {
 	Path      string `json:"path"`
 	Code      string `json:"code"`
 	Count     int    `json:"count"`
-	Timestamp string `json"timestamp"`
+	Timestamp string `json:"timestamp"`
 }
 
 type Buffer interface {
