@@ -76,11 +76,11 @@ func (s *buffer) Add(topic string, log IncomingLog) {
 }
 
 func (s *buffer) Flush() {
-	log.Debug("Flushing data to database")
+	log.Info("Flushing data to database")
 	toBeFlushed := s.buff
 	s.buff = make(map[string]map[IncomingLog]int)
 	for k, v := range toBeFlushed {
-		log.Println("Flushing data", k, v)
+		log.Debug("Flushing data", k, v)
 		col := s.db.GetCollection(k)
 		for kk, vv := range v {
 			sl := createStoreLog(kk, vv)

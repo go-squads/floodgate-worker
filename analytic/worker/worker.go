@@ -41,7 +41,7 @@ func (w *analyticWorker) OnSuccess(f func(*sarama.ConsumerMessage)) {
 }
 
 func (w *analyticWorker) successReadMessage(message *sarama.ConsumerMessage) {
-	log.Infof("\nTopic: %s, Partition: %d, Offset: %d, Key: %s, MessageVal: %s,\n",
+	log.Debugf("\nTopic: %s, Partition: %d, Offset: %d, Key: %s, MessageVal: %s,\n",
 		message.Topic, message.Partition, message.Offset, message.Key, message.Value)
 	if w.onSuccessFunc != nil {
 		w.onSuccessFunc(message)
@@ -88,13 +88,12 @@ func (w *analyticWorker) consumeMessage() {
 func (w *analyticWorker) onNewMessage(message *sarama.ConsumerMessage) {
 	messageVal := make(map[string]interface{})
 	_ = json.Unmarshal(message.Value, &messageVal)
-	roundedTime := roundTime(messageVal["@timestamp"])
 	data := buffer.IncomingLog{
 		Level:     fmt.Sprint(messageVal["lvl"]),
 		Method:    fmt.Sprint(messageVal["method"]),
 		Path:      fmt.Sprint(messageVal["path"]),
 		Code:      fmt.Sprint(messageVal["code"]),
-		Timestamp: fmt.Sprint(roundedTime),
+		Timestamp: roundTime(messageVal["@timestamp"]).UTC().Format(time.RFC3339),
 	}
 	buffer.GetBuffer().Add(w.subscribedTopic, data)
 }
